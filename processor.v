@@ -89,6 +89,9 @@ module processor(
     output [4:0] ctrl_writeReg, ctrl_readRegA, ctrl_readRegB;
     output [31:0] data_writeReg;
     input [31:0] data_readRegA, data_readRegB;
+	 
+	 wire [31:0] PC;
+	 assign PC = {20'b0, address_imem};
 
     /* YOUR CODE STARTS HERE */
 

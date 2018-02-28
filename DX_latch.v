@@ -13,23 +13,30 @@ module DX_latch (
 	in_immediate,
 	in_instr,
 	in_data_readRegA,
-	in_data_readRegB;
+	in_data_readRegB
 );
 	
-	input [31:0] 		in_instr,
+	input [31:0] 		in_data_readRegA,
+							in_data_readRegB,
+							in_instr,
 							in_PC_next,
-							in_ctrl_signals,
 							in_immediate;
+	input [11:0]		in_ctrl_signals;
 	input 				wren,
 							clock,
 							reset;
 	
-	output [31:0]		out_instr,
+	output [31:0]		out_data_readRegA,
+							out_data_readRegB,
+							out_instr,
 							out_PC_next,
 							out_immediate;
-	output [9:0]		out_ctrl_signals;
+	output [11:0]		out_ctrl_signals;
 	
+	wire [31:0]			temp_ctrls;
 	wire					HIGH;
+	
+	assign out_ctrl_signals = temp_ctrls[11:0];
 	
 	register regA (
 		.data(in_data_readRegA),
@@ -64,11 +71,11 @@ module DX_latch (
 	 );
 	 
 	 register ctrl_signals_reg (
-		.data(in_ctrl_signals),
+		.data({20'b0, in_ctrl_signals}),
 		.enable(wren),
 		.reset(reset),
 		.clk(clock),
-		.out(out_ctrl_signals)
+		.out(temp_ctrls)
 	 );
 	 
 	 register imm_reg (

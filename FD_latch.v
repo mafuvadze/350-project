@@ -21,15 +21,15 @@ module FD_latch (
 	
 	assign LOW = 1'b0;
 						
-	register PC_reg(
-		.data(in_PC),
+	register PC_reg (
+		.data(in_PC_next),
 		.enable(wren),
 		.reset(reset),
 		.clk(clock),
-		.out(out_PC)
+		.out(out_PC_next)
 	);
 	
-	register IR_reg(
+	register IR_reg (
 		.data(in_IR),
 		.enable(wren),
 		.reset(reset),

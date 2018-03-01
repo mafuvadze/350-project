@@ -124,7 +124,8 @@ module processor(
 						rzero,
 						execute_rd_latched,
 						memory_rd_latched;
-	 wire 			execute_branch_taken,
+	 wire 			decode_uses_rd,
+						execute_branch_taken,
 						execute_eq,
 						execute_gt,
 						HIGH,
@@ -137,14 +138,15 @@ module processor(
 	 assign rzero   = 5'b0;	
 		
 	 /* FETCH STAGE */
+	 assign address_imem 			= execute_branch_taken ? 12'bZ : fetch_PC;
 	 assign fetch_imem_extended 	= {20'b0, address_imem};
 	 assign fetch_PC_increment 	= 32'd1; /*ISA is word addressed*/
 	 
 	 // Store the current PC. Write on falling edge of clock
 	 register pc_reg (
-		.data	 (fetch_imem_extended),
+		.data	 (fetch_PC_next),
 		.enable(HIGH),
-		.reset (reset | execute_branch_taken),
+		.reset (reset),
 		.clk	 (~clock),
 		.out	 (fetch_PC)
 	 );
@@ -153,7 +155,7 @@ module processor(
 	 cla_32 pc_next (
 		.sum		(fetch_PC_next),
 		.overflow(),
-		.a			(fetch_PC),
+		.a			(fetch_imem_extended),
 		.b			(fetch_PC_increment),
 		.c_in		(LOW)
 	 );
@@ -166,7 +168,7 @@ module processor(
 		.clock	   (~clock),
 		.reset	   (reset | execute_branch_taken),
 		.in_IR	   (q_imem),
-		.in_PC_next	(fetch_PC_next)
+		.in_PC_next	(fetch_PC)
 	 );
 	 
 	/* DECODE STAGE */
@@ -188,9 +190,12 @@ module processor(
 		.instr			(fetch_IR_latched)
 	);
 	
+	assign decode_uses_rd = ((decode_ctrls[6] & ~decode_ctrls[9]) | (decode_ctrls[10] | decode_ctrls[11]));
 	assign ctrl_readRegA = decode_ctrls[9] ?
-			rstatus : fetch_IR_latched[21:17];
-	assign ctrl_readRegB = decode_ctrls[9] ? rzero : fetch_IR_latched[16:12];
+		rstatus : fetch_IR_latched[21:17];
+	assign ctrl_readRegB = decode_ctrls[9] ?
+		rzero : decode_uses_rd ?
+		fetch_IR_latched[26:22] : fetch_IR_latched[16:12];
 	assign decode_imm = fetch_IR_latched[16] ?													// Sign extension
 		{15'b1, fetch_IR_latched[16:0]} : {15'b0, fetch_IR_latched[16:0]};
 	
@@ -249,7 +254,7 @@ module processor(
 	assign execute_PC_next = (execute_branch_taken & (decode_ctrls_latched[11] | decode_ctrls_latched[10])) ?
 		execute_ALU_result : 32'bZ;
 	assign execute_PC_next = (execute_branch_taken & decode_ctrls_latched[9]) ?
-		{6'b0, decode_IR_latched[26:0]} : 32'bZ;
+		{5'b0, decode_IR_latched[26:0]} : 32'bZ;
 		
 	// Latch the results of the execute stage on falling edge
 	XM_latch xm_latch (
@@ -260,18 +265,18 @@ module processor(
 		.out_rd			  (execute_rd_latched),
 		.wren				  (HIGH),																					// TODO add logic
 		.clock			  (~clock),
-		.reset			  (reset | execute_branch_taken),
+		.reset			  (reset),
 		.in_PC_next		  (execute_PC_next),
 		.in_ctrl_signals (decode_ctrls_latched),
 		.in_ALU_result	  (execute_ALU_result),
-		.in_data_reg	  (execute_dataA),
+		.in_data_reg	  (decode_data_readRegB_latched),
 		.in_rd			  (decode_IR_latched[26:22])
 	);
 	
 	/* MEMORY STAGE */
-	assign address_imem = execute_PC_next_latched[11:0];
+	assign address_imem = execute_branch_taken ? execute_PC_next_latched[11:0] : 12'bZ;
 	assign address_dmem = execute_ALU_result_latched[11:0];
-	//assign data 		  = execute_data_latched;
+	assign data 		  = execute_data_latched;
 	assign wren 		  = execute_ctrls_latched[6];
 	
 	// Latch the results of the memory stage on falling edge
@@ -282,7 +287,7 @@ module processor(
 		.out_ctrl_signals	(memory_ctrls_latched),
 		.wren					(HIGH),																					// TODO add logic
 		.clock				(~clock),
-		.reset				(reset | execute_branch_taken),
+		.reset				(reset),
 		.in_ALU_result		(execute_ALU_result_latched),
 		.in_data_read		(q_dmem),
 		.in_rd				(execute_rd_latched),

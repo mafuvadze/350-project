@@ -1,5 +1,6 @@
 module XM_latch (
-	out_PC_next,											
+	out_PC_next,
+	out_PC_plus1,
 	out_ctrl_signals,									
 	out_ALU_result,
 	out_data_reg,
@@ -8,6 +9,7 @@ module XM_latch (
 	clock,
 	reset,
 	in_PC_next,
+	in_PC_plus1,
 	in_ctrl_signals,
 	in_ALU_result,
 	in_data_reg,
@@ -16,6 +18,7 @@ module XM_latch (
 
 	input [31:0]			in_PC_next,
 								in_ALU_result,
+								in_PC_plus1,
 								in_data_reg;
 	input [13:0]			in_ctrl_signals;
 	input [4:0]				in_rd;
@@ -25,6 +28,7 @@ module XM_latch (
 	
 	output [31:0]			out_PC_next,
 								out_ALU_result,
+								out_PC_plus1,
 								out_data_reg;
 	output [13:0]			out_ctrl_signals;
 	output [4:0] 			out_rd;
@@ -73,6 +77,14 @@ module XM_latch (
 		.reset(reset),
 		.clk(clock),
 		.out(temp_rd)
+	 );
+	 
+	 register PC_plus1 (
+		.data(in_PC_plus1),
+		.enable(wren),
+		.reset(reset),
+		.clk(clock),
+		.out(out_PC_plus1)
 	 );
 	
 endmodule

@@ -112,9 +112,11 @@ module processor(
 						execute_multdiv_result,
 						execute_PC_next,
 						execute_PC_next_latched,
+						execute_PC_plus1_latched,
 						execute_ALU_result,
 						execute_ALU_result_latched,
 						memory_ALU_result_latched,
+						memory_PC_plus1_latched,
 						memory_data_read_latched;
 	 wire [13:0]	decode_ctrls,
 	 					decode_ctrls_latched,
@@ -123,13 +125,16 @@ module processor(
 						memory_ctrls_latched;
 	 wire [4:0]		rstatus,
 						rzero,
+						r31,
 						execute_rd_latched,
-						memory_rd_latched;
+						memory_rd_latched,
+						memory_ctrl_writeReg;
 	 wire 			decode_uses_rd,
 						execute_branch_taken,
 						execute_eq,
 						execute_gt,
 						execute_multdiv_ready,
+						writeback_jal,
 						stall,
 						mult,
 						div,
@@ -141,9 +146,11 @@ module processor(
 	 assign LOW 	 = 1'b0;
 	 assign rstatus = 5'd30;
 	 assign rzero   = 5'b0;
+	 assign r31		 = 5'd31;
 	
 	 /* STALL LOGIC */
 	 assign stall = (decode_ctrls_latched[12] & ~execute_multdiv_ready);			//mult or div
+	 
 		
 	 /* FETCH STAGE */
 	 assign address_imem 			= (execute_branch_taken | execute_ctrls_latched[8]) ? 12'bZ : fetch_PC;
@@ -200,9 +207,9 @@ module processor(
 		.instr			(fetch_IR_latched)
 	);
 	
-	assign decode_uses_rd = ((decode_ctrls[6] & ~decode_ctrls[9]) |
-		(decode_ctrls[10] | decode_ctrls[11])) |
-		(decode_ctrls[8] & decode_ctrls[7]);		//jr
+	assign decode_uses_rd = ~decode_ctrls[9] & ((decode_ctrls[6]) |
+		(decode_ctrls[10] | decode_ctrls[11]) |
+		(decode_ctrls[8] & decode_ctrls[7]));		//jr
 	assign ctrl_readRegA = decode_ctrls[9] ?
 		rstatus : fetch_IR_latched[21:17];
 	assign ctrl_readRegB = decode_ctrls[9] ?
@@ -235,7 +242,7 @@ module processor(
 	assign div	= (decode_ctrls[12] & ~decode_ctrls_latched[12] & ~decode_ctrls[13]) ? 1'b1 : 1'b0;
 	
 	/* EXECUTE STAGE */
-	assign execute_dataA = (decode_ctrls_latched[11] | decode_ctrls_latched[10]) ?							// Use PC if a branch instr
+	assign execute_dataA = (decode_ctrls_latched[11] | decode_ctrls_latched[10] | decode_ctrls_latched[8]) ?							// Use PC if a branch instr
 		decode_PC_next_latched : decode_data_readRegA_latched;
 	assign execute_dataB = decode_ctrls_latched[2] ?				// Use imm if an ALUinB instr
 		decode_imm_latched : decode_data_readRegB_latched;
@@ -287,10 +294,12 @@ module processor(
 		execute_ALU_result : 32'bZ;
 	assign execute_PC_next = (execute_branch_taken & decode_ctrls_latched[9]) ?
 		{5'b0, decode_IR_latched[26:0]} : 32'bZ;
+
 		
 	// Latch the results of the execute stage on falling edge
 	XM_latch xm_latch (
-		.out_PC_next	  (execute_PC_next_latched),											
+		.out_PC_next	  (execute_PC_next_latched),
+		.out_PC_plus1	  (execute_PC_plus1_latched),
 		.out_ctrl_signals(execute_ctrls_latched),									
 		.out_ALU_result  (execute_ALU_result_latched),
 		.out_data_reg	  (execute_data_latched),
@@ -299,13 +308,14 @@ module processor(
 		.clock			  (~clock),
 		.reset			  (reset),
 		.in_PC_next		  (execute_PC_next),
+		.in_PC_plus1	  (decode_PC_next_latched),
 		.in_ctrl_signals (decode_ctrls_latched),
 		.in_ALU_result	  (decode_ctrls_latched[12] ? execute_multdiv_result : execute_ALU_result),
 		.in_data_reg	  (decode_data_readRegB_latched),
 		.in_rd			  (decode_IR_latched[26:22])
 	);
 	
-	/* MEMORY STAGE */
+	/* MEMORY STAGE */ //todo latch execute_branch_taken
 	assign address_imem = (execute_branch_taken | execute_ctrls_latched[8]) ? execute_PC_next_latched[11:0] : 12'bZ;
 	assign address_dmem = execute_ALU_result_latched[11:0];
 	assign data 		  = execute_data_latched;
@@ -315,20 +325,25 @@ module processor(
 	MW_latch mx_latch (
 		.out_ALU_result	(memory_ALU_result_latched),
 		.out_data_read		(memory_data_read_latched),
-		.out_rd				(ctrl_writeReg),
+		.out_rd				(memory_ctrl_writeReg),
 		.out_ctrl_signals	(memory_ctrls_latched),
+		.out_PC_next		(memory_PC_plus1_latched),
 		.wren					(HIGH),																					// TODO add logic
 		.clock				(~clock),
 		.reset				(reset),
 		.in_ALU_result		(execute_ALU_result_latched),
 		.in_data_read		(q_dmem),
 		.in_rd				(execute_rd_latched),
-		.in_ctrl_signals	(execute_ctrls_latched)
+		.in_ctrl_signals	(execute_ctrls_latched),
+		.in_PC_next			(execute_PC_plus1_latched)
 	);
 	
 	/* WRITEBACK STAGE */
-	assign data_writeReg = memory_ctrls_latched[3] ?
-		memory_ALU_result_latched  : memory_data_read_latched;
+	assign writeback_jal = memory_ctrls_latched[8] & memory_ctrls_latched[1];
+	
+	assign ctrl_writeReg = memory_ctrls_latched[1] ? r31 : memory_ctrl_writeReg;
+	assign data_writeReg = writeback_jal ? memory_PC_plus1_latched : (memory_ctrls_latched[3] ?
+		memory_ALU_result_latched : q_dmem);//memory_data_read_latched;
 	assign ctrl_writeEnable = memory_ctrls_latched[5];
 
 endmodule

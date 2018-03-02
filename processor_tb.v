@@ -8,10 +8,11 @@ module processor_tb();
 					reg4,
 					reg5,
 					data,
-					q_imem;
+					q_imem,
+					q_dmem;
 	wire [11:0] PC,
 					address_dmem;
-	wire			wren;
+
 	
 	skeleton tester (clock, reset);
 	
@@ -24,7 +25,7 @@ module processor_tb();
 	assign data = tester.my_processor.data;
 	assign PC = tester.address_imem;
 	assign q_imem = tester.q_imem;
-	assign wren = tester.my_processor.wren;
+	assign q_dmem = tester.q_dmem;
 	assign address_dmem = tester.my_processor.address_dmem;
 	
 	initial begin

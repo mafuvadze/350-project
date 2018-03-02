@@ -14,7 +14,7 @@ module MW_latch (
 
 	input [31:0] 		in_ALU_result,
 							in_data_read;
-	input [11:0]		in_ctrl_signals;
+	input [13:0]		in_ctrl_signals;
 	input [4:0]			in_rd;
 	input 				wren,
 							clock,
@@ -22,13 +22,13 @@ module MW_latch (
 								
 	output [31:0] 		out_ALU_result,
 							out_data_read;
-	output [11:0]		out_ctrl_signals;
+	output [13:0]		out_ctrl_signals;
 	output [4:0]		out_rd;
 	
 	wire [31:0]			temp_ctrls,
 							temp_rd;
 	
-	assign out_ctrl_signals = temp_ctrls[11:0];
+	assign out_ctrl_signals = temp_ctrls[13:0];
 	assign out_rd = temp_rd[4:0];
 	
 	 register rd (
@@ -56,7 +56,7 @@ module MW_latch (
 	 );
 	 
 	 register ctrls (
-		.data({20'b0, in_ctrl_signals}),
+		.data({18'b0, in_ctrl_signals}),
 		.enable(wren),
 		.reset(reset),
 		.clk(clock),

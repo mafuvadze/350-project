@@ -21,7 +21,7 @@ module DX_latch (
 							in_instr,
 							in_PC_next,
 							in_immediate;
-	input [11:0]		in_ctrl_signals;
+	input [13:0]		in_ctrl_signals;
 	input 				wren,
 							clock,
 							reset;
@@ -31,12 +31,12 @@ module DX_latch (
 							out_instr,
 							out_PC_next,
 							out_immediate;
-	output [11:0]		out_ctrl_signals;
+	output [13:0]		out_ctrl_signals;
 	
 	wire [31:0]			temp_ctrls;
 	wire					HIGH;
 	
-	assign out_ctrl_signals = temp_ctrls[11:0];
+	assign out_ctrl_signals = temp_ctrls[13:0];
 	
 	register regA (
 		.data(in_data_readRegA),
@@ -71,7 +71,7 @@ module DX_latch (
 	 );
 	 
 	 register ctrl_signals_reg (
-		.data({20'b0, in_ctrl_signals}),
+		.data({18'b0, in_ctrl_signals}),
 		.enable(wren),
 		.reset(reset),
 		.clk(clock),

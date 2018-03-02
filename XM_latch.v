@@ -17,7 +17,7 @@ module XM_latch (
 	input [31:0]			in_PC_next,
 								in_ALU_result,
 								in_data_reg;
-	input [11:0]			in_ctrl_signals;
+	input [13:0]			in_ctrl_signals;
 	input [4:0]				in_rd;
 	input 					wren,
 								clock,
@@ -26,13 +26,13 @@ module XM_latch (
 	output [31:0]			out_PC_next,
 								out_ALU_result,
 								out_data_reg;
-	output [11:0]			out_ctrl_signals;
+	output [13:0]			out_ctrl_signals;
 	output [4:0] 			out_rd;
 	
 	wire [31:0]				temp_ctrls,
 								temp_rd;
 	
-	assign out_ctrl_signals = temp_ctrls[11:0];
+	assign out_ctrl_signals = temp_ctrls[13:0];
 	assign out_rd = temp_rd[4:0];
 	
 	 register PC_next (
@@ -52,7 +52,7 @@ module XM_latch (
 	 );
 	 
 	 register ctrl_sigs (
-		.data({20'b0, in_ctrl_signals}),
+		.data({18'b0, in_ctrl_signals}),
 		.enable(wren),
 		.reset(reset),
 		.clk(clock),

@@ -137,7 +137,8 @@ module processor(
 						execute_shamt,
 						execute_aluop,
 						memory_rd_latched,
-						memory_ctrl_writeReg;
+						memory_ctrl_writeReg,
+						add_aluop;
 	 wire 			decode_uses_rd,
 						decode_jr,
 						decode_bne_or_blt,
@@ -148,6 +149,7 @@ module processor(
 						decode_mult_or_div,
 						decode_mult,
 						decode_div,
+						execute_uses_addition,
 						execute_mult_or_div,
 						execute_branch_taken,
 						execute_branch_taken_latched,
@@ -171,12 +173,14 @@ module processor(
 						LOW;
 	 
 	 /* CONSTANTS */
-	 assign HIGH 	 = 1'b1;
-	 assign LOW 	 = 1'b0;
-	 assign rstatus = 5'd30;
-	 assign rzero   = 5'b0;
-	 assign r31		 = 5'd31;
-	
+	 assign HIGH 	 				= 1'b1;
+	 assign LOW 	 				= 1'b0;
+	 assign rstatus 				= 5'd30;
+	 assign rzero   				= 5'b0;
+	 assign r31		 				= 5'd31;
+	 assign fetch_PC_increment = 32'd1;
+	 assign add_aluop				= 5'b0;
+
 	 /* STALL LOGIC */
 	 assign execute_mult_or_div 	= decode_ctrls_latched[12];
 	 assign stall_multdiv 			= execute_mult_or_div & ~execute_multdiv_ready;
@@ -185,7 +189,6 @@ module processor(
 	 /* FETCH STAGE */	 
 	 assign address_imem 			= execute_branch_or_jump ? execute_PC_next_latched[11:0] : fetch_PC[11:0];
 	 assign fetch_imem_extended 	= {20'b0, address_imem};
-	 assign fetch_PC_increment 	= 32'd1;
 	 
 	 register pc_reg (
 		.data	 (fetch_PC_next),
@@ -287,13 +290,17 @@ module processor(
 	/* EXECUTE STAGE */
 	assign execute_bne_blt_or_jump = decode_ctrls_latched[11] | decode_ctrls_latched[10] | decode_ctrls_latched[8];
 	assign execute_uses_imm 		 = decode_ctrls_latched[2];
+	assign execute_uses_addition	 = decode_ctrls_latched[6]
+		| decode_ctrls_latched[4]
+		| decode_ctrls_latched[11]
+		| decode_ctrls_latched[10];
 	
 	assign execute_dataA = execute_bne_blt_or_jump ? decode_PC_next_latched : decode_data_readRegA_latched;
 	assign execute_dataB = execute_uses_imm ? decode_imm_latched : decode_data_readRegB_latched;
 	
-	assign execute_aluop = decode_IR_latched[6:2];
+	assign execute_aluop = execute_uses_addition ? add_aluop : decode_IR_latched[6:2];
 	assign execute_shamt	= decode_IR_latched[11:7];
-	
+		
 	alu alu (
 		.data_operandA	(execute_dataA),
 		.data_operandB	(execute_dataB),
@@ -371,7 +378,6 @@ module processor(
 	assign data 		  = execute_data_latched;
 	assign wren 		  = execute_ctrls_latched[6];
 	
-	// Latch the results of the memory stage on falling edge
 	MW_latch mx_latch (
 		.out_ALU_result	(memory_ALU_result_latched),
 		.out_data_read		(memory_data_read_latched),

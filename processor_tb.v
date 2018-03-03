@@ -34,7 +34,7 @@ module processor_tb();
 	assign r31 = tester.my_regfile.reg_31.out;
 	
 	assign data = tester.my_processor.data;
-	assign data_writeReg = tester.my_processor.data_writeReg;
+	assign data_writeReg = tester.my_processor.execute_dataA ;//data_writeReg;
 	assign PC = tester.address_imem;
 	assign q_imem = tester.q_imem;
 	assign q_dmem = tester.q_dmem;

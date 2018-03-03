@@ -82,7 +82,7 @@ module processor(
     // Dmem
     output [11:0] address_dmem;
     output [31:0] data;
-    output wren;
+    output 			wren;
     input [31:0] 	q_dmem;
 
     // Regfile
@@ -110,14 +110,17 @@ module processor(
 						execute_data_latched,
 						execute_dataB,
 						execute_multdiv_result,
+						execute_target,
 						execute_PC_next,
 						execute_PC_next_latched,
 						execute_PC_plus1_latched,
+						execute_bne_blt_or_jump,
 						execute_ALU_result,
 						execute_ALU_result_latched,
 						memory_ALU_result_latched,
 						memory_PC_plus1_latched,
 						memory_data_read_latched;
+	 wire [16:0]	decode_imm_raw;
 	 wire [13:0]	decode_ctrls,
 	 					decode_ctrls_latched,
 						execute_ctrls,
@@ -126,18 +129,44 @@ module processor(
 	 wire [4:0]		rstatus,
 						rzero,
 						r31,
+						decode_rs,
+						decode_rt,
+						decode_rd,
+						decode_regB,
 						execute_rd_latched,
+						execute_shamt,
+						execute_aluop,
 						memory_rd_latched,
 						memory_ctrl_writeReg;
 	 wire 			decode_uses_rd,
+						decode_jr,
+						decode_bne_or_blt,
+						decode_weDM,
+						decode_bex,
+						decode_uses_imm,
+						decode_imm_neg,
+						decode_mult_or_div,
+						decode_mult,
+						decode_div,
+						execute_mult_or_div,
 						execute_branch_taken,
+						execute_branch_taken_latched,
 						execute_eq,
 						execute_gt,
+						execute_jump,
+						execute_j2,
+						execute_bne_taken,
+						execute_blt_taken,
+						execute_bex_taken,
+						execute_uses_imm,
 						execute_multdiv_ready,
+						execute_branch_or_jump,
 						writeback_jal,
+						writeback_is_aluop,
 						stall,
-						mult,
-						div,
+						stall_multdiv,
+						mult_ctrl,
+						div_ctrl,
 						HIGH,
 						LOW;
 	 
@@ -149,15 +178,15 @@ module processor(
 	 assign r31		 = 5'd31;
 	
 	 /* STALL LOGIC */
-	 assign stall = (decode_ctrls_latched[12] & ~execute_multdiv_ready);			//mult or div
-	 
+	 assign execute_mult_or_div 	= decode_ctrls_latched[12];
+	 assign stall_multdiv 			= execute_mult_or_div & ~execute_multdiv_ready;
+	 assign stall 						= stall_multdiv;
 		
-	 /* FETCH STAGE */
-	 assign address_imem 			= (execute_branch_taken | execute_ctrls_latched[8]) ? 12'bZ : fetch_PC;
+	 /* FETCH STAGE */	 
+	 assign address_imem 			= execute_branch_or_jump ? execute_PC_next_latched[11:0] : fetch_PC[11:0];
 	 assign fetch_imem_extended 	= {20'b0, address_imem};
-	 assign fetch_PC_increment 	= 32'd1; /*ISA is word addressed*/
+	 assign fetch_PC_increment 	= 32'd1;
 	 
-	 // Store the current PC. Write on falling edge of clock
 	 register pc_reg (
 		.data	 (fetch_PC_next),
 		.enable(~stall),
@@ -166,7 +195,6 @@ module processor(
 		.out	 (fetch_PC)
 	 );
 	 
-	 // Calculate the next instruction counter
 	 cla_32 pc_next (
 		.sum		(fetch_PC_next),
 		.overflow(),
@@ -175,21 +203,18 @@ module processor(
 		.c_in		(LOW)
 	 );
 	 
-	 // Latch the results of the fetch stage on falling edge
 	 FD_latch fd_latch (
 		.out_IR	   (fetch_IR_latched),
 		.out_PC_next(fetch_PC_next_latched),
 		.wren	      (~stall),								
 		.clock	   (~clock),
-		.reset	   (reset | execute_branch_taken | execute_ctrls_latched[8]),
+		.reset	   (reset | execute_branch_or_jump),
 		.in_IR	   (q_imem),
 		.in_PC_next	(fetch_PC)
 	 );
 	 
 	/* DECODE STAGE */
-	
-	// Get control signals based on the 32-bit instruction
-	op_decoder opdec (
+		op_decoder opdec (
 		.mult				(decode_ctrls[13]),
 		.mult_or_div	(decode_ctrls[12]),
 		.bne				(decode_ctrls[11]),
@@ -207,18 +232,40 @@ module processor(
 		.instr			(fetch_IR_latched)
 	);
 	
-	assign decode_uses_rd = ~decode_ctrls[9] & ((decode_ctrls[6]) |
-		(decode_ctrls[10] | decode_ctrls[11]) |
-		(decode_ctrls[8] & decode_ctrls[7]));		//jr
-	assign ctrl_readRegA = decode_ctrls[9] ?
-		rstatus : fetch_IR_latched[21:17];
-	assign ctrl_readRegB = decode_ctrls[9] ?
-		rzero : decode_uses_rd ?
-		fetch_IR_latched[26:22] : fetch_IR_latched[16:12];
-	assign decode_imm = fetch_IR_latched[16] ?													// Sign extension
-		{15'b1, fetch_IR_latched[16:0]} : {15'b0, fetch_IR_latched[16:0]};
+	assign decode_jr 			 	= decode_ctrls[8] & decode_ctrls[7];
+	assign decode_bne_or_blt 	= decode_ctrls[10] | decode_ctrls[11];
+	assign decode_weDM 			= decode_ctrls[6];
+	assign decode_bex 			= decode_ctrls[9];
 	
-	// Latch the results of the decode stage on falling edge
+	assign decode_uses_rd = ~decode_bex
+		&	(decode_weDM
+		|	decode_bne_or_blt
+		|	decode_jr);
+	
+	
+	assign decode_rs = fetch_IR_latched[21:17];
+	assign decode_rt = fetch_IR_latched[16:12];
+	assign decode_rd = fetch_IR_latched[26:22];
+	
+	assign decode_regB 		= decode_uses_rd ? decode_rd : decode_rt;
+	assign decode_imm_neg 	= fetch_IR_latched[16];
+	assign decode_imm_raw	= fetch_IR_latched[16:0];
+						
+	assign ctrl_readRegA = decode_bex 		? rstatus : decode_rs;
+	assign ctrl_readRegB = decode_bex 		? rzero : decode_regB;
+	assign decode_imm 	= decode_imm_neg 	? {15'b1, decode_imm_raw} : {15'b0, decode_imm_raw};
+	
+	// Reset multdiv
+	assign decode_mult_or_div 		= decode_ctrls[12];
+	assign execute_mult_or_div 	= decode_ctrls_latched[12];
+	
+	assign execute_mult 				= decode_ctrls[13];
+	assign execute_div				= ~decode_ctrls[13];
+	
+	assign mult_ctrl 		= decode_mult_or_div & ~execute_mult_or_div & execute_mult;
+	assign div_ctrl		= decode_mult_or_div & ~execute_mult_or_div & execute_div;
+	
+	
 	DX_latch dx_latch (
 		.out_PC_next		(decode_PC_next_latched),												
 		.out_ctrl_signals	(decode_ctrls_latched),										
@@ -228,7 +275,7 @@ module processor(
 		.out_data_readRegB(decode_data_readRegB_latched),
 		.wren					(~stall),																					// TODO add logic
 		.clock				(~clock),
-		.reset				(reset | execute_branch_taken | execute_ctrls_latched[8]),
+		.reset				(reset | execute_branch_or_jump),
 		.in_PC_next			(fetch_PC_next_latched),
 		.in_ctrl_signals	(decode_ctrls),
 		.in_immediate		(decode_imm),
@@ -237,43 +284,41 @@ module processor(
 		.in_data_readRegB	(data_readRegB)
 	);
 	
-	// Reset multdiv
-	assign mult = (decode_ctrls[12] & ~decode_ctrls_latched[12] &  decode_ctrls[13]) ? 1'b1 : 1'b0;
-	assign div	= (decode_ctrls[12] & ~decode_ctrls_latched[12] & ~decode_ctrls[13]) ? 1'b1 : 1'b0;
-	
 	/* EXECUTE STAGE */
-	assign execute_dataA = (decode_ctrls_latched[11] | decode_ctrls_latched[10] | decode_ctrls_latched[8]) ?							// Use PC if a branch instr
-		decode_PC_next_latched : decode_data_readRegA_latched;
-	assign execute_dataB = decode_ctrls_latched[2] ?				// Use imm if an ALUinB instr
-		decode_imm_latched : decode_data_readRegB_latched;
+	assign execute_bne_blt_or_jump = decode_ctrls_latched[11] | decode_ctrls_latched[10] | decode_ctrls_latched[8];
+	assign execute_uses_imm 		 = decode_ctrls_latched[2];
 	
-	// Perform calculations
+	assign execute_dataA = execute_bne_blt_or_jump ? decode_PC_next_latched : decode_data_readRegA_latched;
+	assign execute_dataB = execute_uses_imm ? decode_imm_latched : decode_data_readRegB_latched;
+	
+	assign execute_aluop = decode_IR_latched[6:2];
+	assign execute_shamt	= decode_IR_latched[11:7];
+	
 	alu alu (
 		.data_operandA	(execute_dataA),
 		.data_operandB	(execute_dataB),
-		.ctrl_ALUopcode(decode_IR_latched[6:2]),
-		.ctrl_shiftamt	(decode_IR_latched[11:7]),
+		.ctrl_ALUopcode(execute_aluop),
+		.ctrl_shiftamt	(execute_shamt),
 		.data_result	(execute_ALU_result),
 		.isNotEqual		(),
 		.isLessThan		(),
 		.overflow		()
 	);
 	
-	// Compare value to see if branch is taken or not
+	// rd < rs or rd != rs
 	comp_32 branch_comp (
 		.eq	 (execute_eq),
 		.gt	 (execute_gt),
 		.enable(HIGH),
-		.in_0	 (execute_dataA),
-		.in_1	 (decode_data_readRegB_latched)
+		.in_0	 (decode_data_readRegB_latched),
+		.in_1	 (decode_data_readRegA_latched)
 	);
 	
-	// Multdiv
 	multdiv mult_div (
 		.data_operandA	(execute_dataA),
 		.data_operandB	(execute_dataB), 
-		.ctrl_MULT	  	(mult),
-		.ctrl_DIV	  	(div),
+		.ctrl_MULT	  	(mult_ctrl),
+		.ctrl_DIV	  	(div_ctrl),
 		.clock		  	(clock),  
 		.data_result  	(execute_multdiv_result),
 		.data_exception(),
@@ -281,22 +326,26 @@ module processor(
 	);
 
 	
-	// Branches
-	assign execute_branch_taken = (decode_ctrls_latched[11] & ~execute_eq) |
-		(decode_ctrls_latched[10] & (~execute_eq & ~execute_gt)) |
-		(decode_ctrls_latched[9] & ~execute_eq);	
-		
+	// Handle branches and jumps
+	assign execute_branch_or_jump = execute_branch_taken_latched | execute_ctrls_latched[8];
+	assign execute_bne_taken		= decode_ctrls_latched[11] & ~execute_eq;
+	assign execute_blt_taken		= decode_ctrls_latched[10] & ~execute_eq & ~execute_gt;
+	assign execute_bex_taken		= decode_ctrls_latched[9] & ~execute_eq;
+	assign execute_jump				= decode_ctrls_latched[8];
+	assign execute_j2					= decode_ctrls_latched[7];
+	
+	assign execute_branch_taken = execute_bne_taken
+		| execute_blt_taken
+		| execute_bex_taken;
+	
+	assign execute_target  = {5'b0, decode_IR_latched[26:0]};
 	assign execute_PC_next = execute_branch_taken ?
-		32'bZ : decode_ctrls_latched[8] ?
-			(decode_ctrls_latched[7] ? execute_dataB : {5'b0, decode_IR_latched[26:0]}) : 
-		decode_PC_next_latched;
-	assign execute_PC_next = (execute_branch_taken & (decode_ctrls_latched[11] | decode_ctrls_latched[10])) ?
-		execute_ALU_result : 32'bZ;
-	assign execute_PC_next = (execute_branch_taken & decode_ctrls_latched[9]) ?
-		{5'b0, decode_IR_latched[26:0]} : 32'bZ;
+		32'bZ : (execute_jump ? (execute_j2 ? execute_dataB : execute_target) 
+		: decode_PC_next_latched);
+	assign execute_PC_next = (execute_blt_taken | execute_bne_taken) ? execute_ALU_result : 32'bZ;
+	assign execute_PC_next = execute_bex_taken ? execute_target : 32'bZ;
 
 		
-	// Latch the results of the execute stage on falling edge
 	XM_latch xm_latch (
 		.out_PC_next	  (execute_PC_next_latched),
 		.out_PC_plus1	  (execute_PC_plus1_latched),
@@ -304,6 +353,7 @@ module processor(
 		.out_ALU_result  (execute_ALU_result_latched),
 		.out_data_reg	  (execute_data_latched),
 		.out_rd			  (execute_rd_latched),
+		.out_branch_taken(execute_branch_taken_latched),
 		.wren				  (HIGH),																					// TODO add logic
 		.clock			  (~clock),
 		.reset			  (reset),
@@ -312,11 +362,11 @@ module processor(
 		.in_ctrl_signals (decode_ctrls_latched),
 		.in_ALU_result	  (decode_ctrls_latched[12] ? execute_multdiv_result : execute_ALU_result),
 		.in_data_reg	  (decode_data_readRegB_latched),
-		.in_rd			  (decode_IR_latched[26:22])
+		.in_rd			  (decode_IR_latched[26:22]),
+		.in_branch_taken (execute_branch_taken)
 	);
 	
-	/* MEMORY STAGE */ //todo latch execute_branch_taken
-	assign address_imem = (execute_branch_taken | execute_ctrls_latched[8]) ? execute_PC_next_latched[11:0] : 12'bZ;
+	/* MEMORY STAGE */
 	assign address_dmem = execute_ALU_result_latched[11:0];
 	assign data 		  = execute_data_latched;
 	assign wren 		  = execute_ctrls_latched[6];
@@ -339,11 +389,13 @@ module processor(
 	);
 	
 	/* WRITEBACK STAGE */
-	assign writeback_jal = memory_ctrls_latched[8] & memory_ctrls_latched[1];
+	assign writeback_is_aluop  = memory_ctrls_latched[3];
+	assign writeback_jal 		= memory_ctrls_latched[8] & memory_ctrls_latched[1];
+	assign ctrl_writeEnable 	= memory_ctrls_latched[5];
 	
-	assign ctrl_writeReg = memory_ctrls_latched[1] ? r31 : memory_ctrl_writeReg;
-	assign data_writeReg = writeback_jal ? memory_PC_plus1_latched : (memory_ctrls_latched[3] ?
-		memory_ALU_result_latched : q_dmem);//memory_data_read_latched;
-	assign ctrl_writeEnable = memory_ctrls_latched[5];
+	assign ctrl_writeReg = writeback_jal ? r31 : memory_ctrl_writeReg;
+	assign data_writeReg = writeback_jal ? memory_PC_plus1_latched
+		: (memory_ctrls_latched[3] ? memory_ALU_result_latched : q_dmem);
+//		: (memory_ctrls_latched[3] ? memory_ALU_result_latched : memory_data_read_latched);
 
 endmodule

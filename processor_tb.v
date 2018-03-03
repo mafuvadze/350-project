@@ -13,13 +13,14 @@ module processor_tb();
 					data_writeReg,
 					q_imem,
 					q_dmem;
+	wire [13:0]	ctrl;
 	wire [11:0] PC,
 					address_dmem,
 					address_imem;
 	wire [4:0]	ctrl_writeReg;
 	wire			wren,
 					ctrl_writeEnable,
-					jal;
+					branch_taken;
 
 	
 	skeleton tester (clock, reset);
@@ -42,7 +43,8 @@ module processor_tb();
 	assign wren = tester.my_processor.wren;
 	assign ctrl_writeEnable = tester.my_processor.ctrl_writeEnable;
 	assign ctrl_writeReg = tester.my_processor.ctrl_writeReg;
-	assign jal = tester.my_processor.writeback_jal;
+	assign branch_taken = tester.my_processor.execute_branch_taken_latched;
+	assign ctrl = tester.my_processor.execute_ctrls_latched;
 	
 	initial begin
 		clock = 0;

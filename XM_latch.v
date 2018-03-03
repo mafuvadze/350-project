@@ -5,6 +5,7 @@ module XM_latch (
 	out_ALU_result,
 	out_data_reg,
 	out_rd,
+	out_branch_taken,
 	wren,
 	clock,
 	reset,
@@ -13,7 +14,8 @@ module XM_latch (
 	in_ctrl_signals,
 	in_ALU_result,
 	in_data_reg,
-	in_rd
+	in_rd,
+	in_branch_taken
 );
 
 	input [31:0]			in_PC_next,
@@ -24,7 +26,8 @@ module XM_latch (
 	input [4:0]				in_rd;
 	input 					wren,
 								clock,
-								reset;
+								reset,
+								in_branch_taken;
 	
 	output [31:0]			out_PC_next,
 								out_ALU_result,
@@ -32,6 +35,7 @@ module XM_latch (
 								out_data_reg;
 	output [13:0]			out_ctrl_signals;
 	output [4:0] 			out_rd;
+	output					out_branch_taken;
 	
 	wire [31:0]				temp_ctrls,
 								temp_rd;
@@ -79,12 +83,21 @@ module XM_latch (
 		.out(temp_rd)
 	 );
 	 
-	 register PC_plus1 (
+	register PC_plus1 (
 		.data(in_PC_plus1),
 		.enable(wren),
 		.reset(reset),
 		.clk(clock),
 		.out(out_PC_plus1)
-	 );
+	);
+	 
+	dflipflop branch_taken (
+		.d	 	(in_branch_taken),
+		.clk	(clock),
+		.clrn	(1'b1),
+		.prn	(1'b1),
+		.ena	(wren),
+		.q		(out_branch_taken)
+	);
 	
 endmodule

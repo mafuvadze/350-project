@@ -16,9 +16,7 @@ module FD_latch (
 	
 	output [31:0] 	out_IR,
 						out_PC_next;
-						
-	wire 				LOW;
-	
+							
 	assign LOW = 1'b0;
 						
 	register PC_reg (

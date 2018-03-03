@@ -126,6 +126,7 @@ module processor(
 						execute_ctrls,
 						execute_ctrls_latched,
 						memory_ctrls_latched;
+	 wire [11:0]	fetch_jump_branch_pc;
 	 wire [4:0]		rstatus,
 						rzero,
 						r31,
@@ -152,7 +153,8 @@ module processor(
 						execute_uses_addition,
 						execute_mult_or_div,
 						execute_branch_taken,
-						execute_branch_taken_latched,
+						execute_jump_branch_taken_latched,
+						execute_is_aluop,
 						execute_eq,
 						execute_gt,
 						execute_jump,
@@ -163,6 +165,8 @@ module processor(
 						execute_uses_imm,
 						execute_multdiv_ready,
 						execute_branch_or_jump,
+						memory_branch_or_jump,
+						memory_jump,
 						writeback_jal,
 						writeback_is_aluop,
 						stall,
@@ -186,8 +190,9 @@ module processor(
 	 assign stall_multdiv 			= execute_mult_or_div & ~execute_multdiv_ready;
 	 assign stall 						= stall_multdiv;
 		
-	 /* FETCH STAGE */	 
-	 assign address_imem 			= execute_branch_or_jump ? execute_PC_next_latched[11:0] : fetch_PC[11:0];
+	 /* FETCH STAGE */
+	 assign fetch_jump_branch_pc 	= memory_jump ? execute_PC_next_latched[11:0] : execute_ALU_result_latched[11:0];
+	 assign address_imem 			= execute_jump_branch_taken_latched ? fetch_jump_branch_pc : fetch_PC[11:0];
 	 assign fetch_imem_extended 	= {20'b0, address_imem};
 	 
 	 register pc_reg (
@@ -211,7 +216,7 @@ module processor(
 		.out_PC_next(fetch_PC_next_latched),
 		.wren	      (~stall),								
 		.clock	   (~clock),
-		.reset	   (reset | execute_branch_or_jump),
+		.reset	   (reset | memory_branch_or_jump),
 		.in_IR	   (q_imem),
 		.in_PC_next	(fetch_PC)
 	 );
@@ -278,7 +283,7 @@ module processor(
 		.out_data_readRegB(decode_data_readRegB_latched),
 		.wren					(~stall),																					// TODO add logic
 		.clock				(~clock),
-		.reset				(reset | execute_branch_or_jump),
+		.reset				(reset | memory_branch_or_jump),
 		.in_PC_next			(fetch_PC_next_latched),
 		.in_ctrl_signals	(decode_ctrls),
 		.in_immediate		(decode_imm),
@@ -290,6 +295,7 @@ module processor(
 	/* EXECUTE STAGE */
 	assign execute_bne_blt_or_jump = decode_ctrls_latched[11] | decode_ctrls_latched[10] | decode_ctrls_latched[8];
 	assign execute_uses_imm 		 = decode_ctrls_latched[2];
+	assign execute_is_aluop 		 = decode_ctrls_latched[3];
 	assign execute_uses_addition	 = decode_ctrls_latched[6]
 		| decode_ctrls_latched[4]
 		| decode_ctrls_latched[11]
@@ -298,7 +304,7 @@ module processor(
 	assign execute_dataA = execute_bne_blt_or_jump ? decode_PC_next_latched : decode_data_readRegA_latched;
 	assign execute_dataB = execute_uses_imm ? decode_imm_latched : decode_data_readRegB_latched;
 	
-	assign execute_aluop = execute_uses_addition ? add_aluop : decode_IR_latched[6:2];
+	assign execute_aluop =execute_is_aluop? decode_IR_latched[6:2] : add_aluop;
 	assign execute_shamt	= decode_IR_latched[11:7];
 		
 	alu alu (
@@ -334,7 +340,7 @@ module processor(
 
 	
 	// Handle branches and jumps
-	assign execute_branch_or_jump = execute_branch_taken_latched | execute_ctrls_latched[8];
+	assign execute_branch_or_jump = execute_branch_taken | decode_ctrls_latched[8];
 	assign execute_bne_taken		= decode_ctrls_latched[11] & ~execute_eq;
 	assign execute_blt_taken		= decode_ctrls_latched[10] & ~execute_eq & ~execute_gt;
 	assign execute_bex_taken		= decode_ctrls_latched[9] & ~execute_eq;
@@ -360,23 +366,25 @@ module processor(
 		.out_ALU_result  (execute_ALU_result_latched),
 		.out_data_reg	  (execute_data_latched),
 		.out_rd			  (execute_rd_latched),
-		.out_branch_taken(execute_branch_taken_latched),
+		.out_branch_taken(execute_jump_branch_taken_latched),
 		.wren				  (HIGH),																					// TODO add logic
 		.clock			  (~clock),
-		.reset			  (reset),
+		.reset			  (reset | memory_branch_or_jump),
 		.in_PC_next		  (execute_PC_next),
 		.in_PC_plus1	  (decode_PC_next_latched),
 		.in_ctrl_signals (decode_ctrls_latched),
 		.in_ALU_result	  (decode_ctrls_latched[12] ? execute_multdiv_result : execute_ALU_result),
 		.in_data_reg	  (decode_data_readRegB_latched),
 		.in_rd			  (decode_IR_latched[26:22]),
-		.in_branch_taken (execute_branch_taken)
+		.in_branch_taken (execute_branch_or_jump)
 	);
 	
 	/* MEMORY STAGE */
+	assign memory_branch_or_jump = execute_jump_branch_taken_latched;
 	assign address_dmem = execute_ALU_result_latched[11:0];
 	assign data 		  = execute_data_latched;
 	assign wren 		  = execute_ctrls_latched[6];
+	assign memory_jump  = execute_ctrls_latched[8];
 	
 	MW_latch mx_latch (
 		.out_ALU_result	(memory_ALU_result_latched),

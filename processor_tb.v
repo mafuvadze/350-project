@@ -34,7 +34,7 @@ module processor_tb();
 	assign r31 = tester.my_regfile.reg_31.out;
 	
 	assign data = tester.my_processor.data;
-	assign data_writeReg = tester.my_processor.execute_ALU_result_latched ;//data_writeReg;
+	assign data_writeReg = tester.my_processor.execute_bypass_dataA;//data_writeReg;
 	assign PC = tester.address_imem;
 	assign q_imem = tester.q_imem;
 	assign q_dmem = tester.q_dmem;
@@ -43,8 +43,8 @@ module processor_tb();
 	assign wren = tester.my_processor.wren;
 	assign ctrl_writeEnable = tester.my_processor.ctrl_writeEnable;
 	assign ctrl_writeReg = tester.my_processor.ctrl_writeReg;
-	assign branch_taken = tester.my_processor.memory_branch_or_jump;
-	assign ctrl = tester.my_processor.execute_ctrls_latched;
+	assign branch_taken = tester.my_processor.bypass.uses_mx_bypass_regA;//memory_branch_or_jump;
+	assign ctrl = tester.my_processor.memory_ctrls_latched;
 	
 	initial begin
 		clock = 0;

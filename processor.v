@@ -117,6 +117,10 @@ module processor(
 						execute_bne_blt_or_jump,
 						execute_ALU_result,
 						execute_ALU_result_latched,
+						execute_bypass_dataA,
+						execute_bypass_dataB,
+						execute_op_inA,
+						execute_op_inB,
 						memory_ALU_result_latched,
 						memory_PC_plus1_latched,
 						memory_data_read_latched;
@@ -137,6 +141,8 @@ module processor(
 						execute_rd_latched,
 						execute_shamt,
 						execute_aluop,
+						execute_reg_A,
+						execute_reg_B,
 						memory_rd_latched,
 						memory_ctrl_writeReg,
 						add_aluop;
@@ -173,6 +179,10 @@ module processor(
 						stall_multdiv,
 						mult_ctrl,
 						div_ctrl,
+						uses_mx_bypass_regA,
+						uses_mx_bypass_regB,
+						uses_wx_bypass_regA,
+						uses_wx_bypass_regB,
 						HIGH,
 						LOW;
 	 
@@ -184,7 +194,23 @@ module processor(
 	 assign r31		 				= 5'd31;
 	 assign fetch_PC_increment = 32'd1;
 	 assign add_aluop				= 5'b0;
-
+	 
+	 /* BYPASS LOGIC */
+	bypass_logic bypass (
+		.uses_mx_bypass_regA		(uses_mx_bypass_regA),
+		.uses_mx_bypass_regB		(uses_mx_bypass_regB),
+		.uses_wx_bypass_regA		(uses_wx_bypass_regA),
+		.uses_wx_bypass_regB		(uses_wx_bypass_regB),
+		.execute_bypass_dataA	(execute_bypass_dataA),
+		.execute_bypass_dataB	(execute_bypass_dataB),
+		.execute_regA				(execute_reg_A),
+		.execute_regB				(execute_reg_B),
+		.memory_rd					(execute_rd_latched),
+		.memory_data				(execute_ctrls_latched[4] ? q_imem : execute_ALU_result_latched),
+		.writeback_rd				(memory_ctrl_writeReg),
+		.writeback_data			(ctrl_writeReg)
+	);
+	 
 	 /* STALL LOGIC */
 	 assign execute_mult_or_div 	= decode_ctrls_latched[12];
 	 assign stall_multdiv 			= execute_mult_or_div & ~execute_multdiv_ready;
@@ -281,6 +307,8 @@ module processor(
 		.out_instr			(decode_IR_latched),
 		.out_data_readRegA(decode_data_readRegA_latched),
 		.out_data_readRegB(decode_data_readRegB_latched),
+		.out_regA			(execute_reg_A),
+		.out_regB			(execute_reg_B),
 		.wren					(~stall),																					// TODO add logic
 		.clock				(~clock),
 		.reset				(reset | memory_branch_or_jump),
@@ -289,7 +317,9 @@ module processor(
 		.in_immediate		(decode_imm),
 		.in_instr			(fetch_IR_latched),
 		.in_data_readRegA	(data_readRegA),
-		.in_data_readRegB	(data_readRegB)
+		.in_data_readRegB	(data_readRegB),
+		.in_regA				(ctrl_readRegA),
+		.in_regB				(ctrl_readRegB)
 	);
 	
 	/* EXECUTE STAGE */
@@ -301,10 +331,13 @@ module processor(
 		| decode_ctrls_latched[11]
 		| decode_ctrls_latched[10];
 	
-	assign execute_dataA = execute_bne_blt_or_jump ? decode_PC_next_latched : decode_data_readRegA_latched;
-	assign execute_dataB = execute_uses_imm ? decode_imm_latched : decode_data_readRegB_latched;
+	assign execute_op_inA = (uses_mx_bypass_regA | uses_wx_bypass_regA) ? execute_bypass_dataA : decode_data_readRegA_latched;
+	assign execute_op_inB = (uses_mx_bypass_regB | uses_wx_bypass_regB) ? execute_bypass_dataB : decode_data_readRegB_latched;
 	
-	assign execute_aluop =execute_is_aluop? decode_IR_latched[6:2] : add_aluop;
+	assign execute_dataA = execute_bne_blt_or_jump ? decode_PC_next_latched : execute_op_inA;
+	assign execute_dataB = execute_uses_imm ? decode_imm_latched : execute_op_inB;
+	
+	assign execute_aluop =	execute_is_aluop? decode_IR_latched[6:2] : add_aluop;
 	assign execute_shamt	= decode_IR_latched[11:7];
 		
 	alu alu (
@@ -409,7 +442,7 @@ module processor(
 	
 	assign ctrl_writeReg = writeback_jal ? r31 : memory_ctrl_writeReg;
 	assign data_writeReg = writeback_jal ? memory_PC_plus1_latched
-		: (memory_ctrls_latched[3] ? memory_ALU_result_latched : q_dmem);
+		: (memory_ctrls_latched[4] ? q_imem : memory_ALU_result_latched);
 //		: (memory_ctrls_latched[3] ? memory_ALU_result_latched : memory_data_read_latched);
 
 endmodule

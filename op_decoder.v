@@ -65,7 +65,7 @@ module op_decoder (mult_or_div, mult, bne, blt, bex, jump, j2, weDM, weReg, weRe
 	or or_weDM 		(weDM, sw, 1'b0);
 	or or_weReg 	(weReg, alu, jal, addi, lw, setx);
 	or or_weRegDM 	(weRegDM, lw, 1'b0);
-	or or_ALUop 	(ALUop, alu, addi);
+	or or_ALUop 	(ALUop, alu);
 	or or_imm 		(immediate, bne, lw, sw, blt, addi);
 	or or_weStatus (weStatus, alu, setx, addi);
 	or or_weReturn (weReturn, jal, 1'b0);

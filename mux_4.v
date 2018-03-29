@@ -1,16 +1,18 @@
-module mux_4(out, in_0, in_1, in_2, in_3, sel);
-	// Inputs
-	input [1:0] sel;
-	input [31:0] in_0, in_1, in_2, in_3;
+module mux_4(
+	out,
+	opt0, opt1, opt2, opt3,
+	sel
+);
+
+	input [1:0] 	sel;
+	input [31:0] 	opt0, opt1, opt2, opt3;
 	
-	// Output
-	output [31:0] out;
+	output [31:0] 	out;
 	
-	// Wires
-	wire [31:0] a, b;
+	wire [31:0] 	muxes[1:0];
 	
-	// Code
-	mux_2 mux_a(.out(a), .in_0(in_0), .in_1(in_1), .sel(sel[0]));
-	mux_2 mux_b(.out(b), .in_0(in_2), .in_1(in_3), .sel(sel[0]));
-	mux_2 mux_c(.out(out), .in_0(a), .in_1(b), .sel(sel[1]));
+	mux_2 mux_a(muxes[0], opt0, opt1, sel[0]);
+	mux_2 mux_b(muxes[1], opt2, opt3, sel[0]);
+	
+	mux_2 mux_c(out, muxes[0], muxes[1], sel[1]);
 endmodule

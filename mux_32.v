@@ -1,27 +1,30 @@
-module mux_32(out, in_0, in_1, in_2, in_3, in_4, in_5, in_6, in_7, in_8, in_9, in_10, in_11, in_12, in_13, in_14, in_15, in_16, in_17, in_18, in_19, in_20, in_21, in_22, in_23, in_24, in_25, in_26, in_27, in_28, in_29, in_30, in_31, sel);
-	// Inputs
-	input [31:0] in_0, in_1, in_2, in_3, in_4, in_5, in_6, in_7, in_8, in_9, in_10, in_11, in_12, in_13, in_14, in_15, in_16, in_17, in_18, in_19, in_20, in_21, in_22, in_23, in_24, in_25, in_26, in_27, in_28, in_29, in_30, in_31;
-	input [4:0] sel;
+module mux_32(
+	out,
+	opt0, opt1, opt2, opt3, opt4, opt5, opt6, opt7, opt8, opt9, opt10, opt11, opt12, opt13, opt14, opt15, opt16, opt17, opt18, opt19, opt20, opt21, opt22, opt23, opt24, opt25, opt26, opt27, opt28, opt29, opt30, opt31,
+	sel
+);
+
+	input [31:0] 	opt0, opt1, opt2, opt3, opt4, opt5, opt6, opt7, opt8, opt9, opt10, opt11, opt12, opt13, opt14, opt15, opt16, opt17, opt18, opt19, opt20, opt21, opt22, opt23, opt24, opt25, opt26, opt27, opt28, opt29, opt30, opt31;
+
+	input [4:0] 	sel;
 	
-	// Outputs
-	output [31:0] out;
+	output [31:0] 	out;
 	
-	// Wire
-	wire [31:0] a, b, c, d, e, f, g, h, i, j;
+	wire [31:0] 	muxes[9:0];
 	
 	// Code
-	mux_4 mux_a(a, in_0, in_1, in_2, in_3, sel[1:0]);
-	mux_4 mux_b(b, in_4, in_5, in_6, in_7, sel[1:0]);
-	mux_4 mux_c(c, in_8, in_9, in_10, in_11, sel[1:0]);
-	mux_4 mux_d(d, in_12, in_13, in_14, in_15, sel[1:0]);
-	mux_4 mux_e(e, in_16, in_17, in_18, in_19, sel[1:0]);
-	mux_4 mux_f(f, in_20, in_21, in_22, in_23, sel[1:0]);
-	mux_4 mux_g(g, in_24, in_25, in_26, in_27, sel[1:0]);
-	mux_4 mux_h(h, in_28, in_29, in_30, in_31, sel[1:0]);
+	mux_4 mux_a(muxes[0], opt0, opt1, opt2, opt3, sel[1:0]);
+	mux_4 mux_b(muxes[1], opt4, opt5, opt6, opt7, sel[1:0]);
+	mux_4 mux_c(muxes[2], opt8, opt9, opt10, opt11, sel[1:0]);
+	mux_4 mux_d(muxes[3], opt2, opt13, opt14, opt15, sel[1:0]);
+	mux_4 mux_e(muxes[4], opt16, opt17, opt18, opt19, sel[1:0]);
+	mux_4 mux_f(muxes[5], opt20, opt21, opt22, opt23, sel[1:0]);
+	mux_4 mux_g(muxes[6], opt24, opt25, opt26, opt27, sel[1:0]);
+	mux_4 mux_h(muxes[7], opt28, opt29, opt30, opt31, sel[1:0]);
 	
-	mux_4 mux_i(i, a, b, c, d, sel[3:2]);
-	mux_4 mux_j(j, e, f, g, h, sel[3:2]);
+	mux_4 mux_i(muxes[8], muxes[0], muxes[1], muxes[2], muxes[3], sel[3:2]);
+	mux_4 mux_j(muxes[9], muxes[4], muxes[5], muxes[6], muxes[7], sel[3:2]);
 	
 	
-	mux_2 mux_k(out, i, j, sel[4]);
+	mux_2 mux_k(out, muxes[8], muxes[9], sel[4]);
 endmodule

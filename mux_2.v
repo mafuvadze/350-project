@@ -1,11 +1,14 @@
-module mux_2(out, in_0, in_1, sel);
-	// Input
-	input sel;
-	input [31:0] in_0, in_1;
+module mux_2(
+	out,
+	opt0, opt1,
+	sel
+);
+
+	input 			sel;
+	input [31:0] 	opt0, opt1;
 	
-	// Output
-	output [31:0] out;
+	output [31:0] 	out;
 	
-	// Code
-	assign out = sel ? in_1 : in_0;
+	assign out = sel ? opt1 : opt0;
+	
 endmodule

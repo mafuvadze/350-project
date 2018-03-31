@@ -44,10 +44,10 @@ module skeleton(clock, reset);
     wire [4:0] ctrl_writeReg, ctrl_readRegA, ctrl_readRegB;
     wire [31:0] data_writeReg;
     wire [31:0] data_readRegA, data_readRegB;
-    regfile my_regfile(
+    regfile my_regfile (
         clock,
         ctrl_writeEnable,
-        ctrl_reset,
+        reset,
         ctrl_writeReg,
         ctrl_readRegA,
         ctrl_readRegB,

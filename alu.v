@@ -9,7 +9,7 @@ module alu(
 	overflow
 );
 
-   input [31:0] 	data_operandA,
+   input signed [31:0] data_operandA,
 						data_operandB;
    input [4:0] 	ctrl_ALUopcode,
 						ctrl_shiftamt;

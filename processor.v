@@ -1,448 +1,269 @@
 /**
- * READ THIS DESCRIPTION!
- *
- * The processor takes in several inputs from a skeleton file.
- *
- * Inputs
- * clock: this is the clock for your processor at 50 MHz
- * reset: we should be able to assert a reset to start your pc from 0 (sync or
- * async is fine)
- *
- * Imem: input data from imem
- * Dmem: input data from dmem
- * Regfile: input data from regfile
- *
- * Outputs
- * Imem: output control signals to interface with imem
- * Dmem: output control signals and data to interface with dmem
- * Regfile: output control signals and data to interface with regfile
- *
- * Notes
- *
- * Ultimately, your processor will be tested by subsituting a master skeleton, imem, dmem, so the
- * testbench can see which controls signal you active when. Therefore, there needs to be a way to
- * "inject" imem, dmem, and regfile interfaces from some external controller module. The skeleton
- * file acts as a small wrapper around your processor for this purpose.
- *
- * You will need to figure out how to instantiate two memory elements, called
- * "syncram," in Quartus: one for imem and one for dmem. Each should take in a
- * 12-bit address and allow for storing a 32-bit value at each address. Each
- * should have a single clock.
- *
- * Each memory element should have a corresponding .mif file that initializes
- * the memory element to certain value on start up. These should be named
- * imem.mif and dmem.mif respectively.
- *
- * Importantly, these .mif files should be placed at the top level, i.e. there
- * should be an imem.mif and a dmem.mif at the same level as process.v. You
- * should figure out how to point your generated imem.v and dmem.v files at
- * these MIF files.
- *
- * imem
- * Inputs:  12-bit address, 1-bit clock enable, and a clock
- * Outputs: 32-bit instruction
- *
- * dmem
- * Inputs:  12-bit address, 1-bit clock, 32-bit data, 1-bit write enable
- * Outputs: 32-bit data at the given address
- *
- */
+* READ THIS DESCRIPTION!
+*
+* The processor takes in several inputs from a skeleton file.
+*
+* Inputs
+* clock: this is the clock for your processor at 50 MHz
+* reset: we should be able to assert a reset to start your pc from 0 (sync or
+* async is fine)
+*
+* Imem: input data from imem
+* Dmem: input data from dmem
+* Regfile: input data from regfile
+*
+* Outputs
+* Imem: output control signals to interface with imem
+* Dmem: output control signals and data to interface with dmem
+* Regfile: output control signals and data to interface with regfile
+*
+* Notes
+*
+* Ultimately, your processor will be tested by subsituting a master skeleton, imem, dmem, so the
+* testbench can see which controls signal you active when. Therefore, there needs to be a way to
+* "inject" imem, dmem, and regfile interfaces from some external controller module. The skeleton
+* file acts as a small wrapper around your processor for this purpose.
+*
+* You will need to figure out how to instantiate two memory elements, called
+* "syncram," in Quartus: one for imem and one for dmem. Each should take in a
+* 12-bit address and allow for storing a 32-bit value at each address. Each
+* should have a single clock.
+*
+* Each memory element should have a corresponding .mif file that initializes
+* the memory element to certain value on start up. These should be named
+* imem.mif and dmem.mif respectively.
+*
+* Importantly, these .mif files should be placed at the top level, i.e. there
+* should be an imem.mif and a dmem.mif at the same level as process.v. You
+* should figure out how to point your generated imem.v and dmem.v files at
+* these MIF files.
+*
+* imem
+* Inputs:  12-bit address, 1-bit clock enable, and a clock
+* Outputs: 32-bit instruction
+*
+* dmem
+* Inputs:  12-bit address, 1-bit clock, 32-bit data, 1-bit write enable
+* Outputs: 32-bit data at the given address
+*
+*/
 module processor(
-    // Control signals
-    clock,                          // I: The master clock
-    reset,                          // I: A reset signal
+ // Control signals
+ clock,                          // I: The master clock
+ reset,                          // I: A reset signal
 
-    // Imem
-    address_imem,                   // O: The address of the data to get from imem
-    q_imem,                         // I: The data from imem
+ // Imem
+ address_imem,                   // O: The address of the data to get from imem
+ q_imem,                         // I: The data from imem
 
-    // Dmem
-    address_dmem,                   // O: The address of the data to get or put from/to dmem
-    data,                           // O: The data to write to dmem
-    wren,                           // O: Write enable for dmem
-    q_dmem,                         // I: The data from dmem
+ // Dmem
+ address_dmem,                   // O: The address of the data to get or put from/to dmem
+ data,                           // O: The data to write to dmem
+ wren,                           // O: Write enable for dmem
+ q_dmem,                         // I: The data from dmem
 
-    // Regfile
-    ctrl_writeEnable,               // O: Write enable for regfile
-    ctrl_writeReg,                  // O: Register to write to in regfile
-    ctrl_readRegA,                  // O: Register to read from port A of regfile
-    ctrl_readRegB,                  // O: Register to read from port B of regfile
-    data_writeReg,                  // O: Data to write to for regfile
-    data_readRegA,                  // I: Data from port A of regfile
-    data_readRegB                   // I: Data from port B of regfile
+ // Regfile
+ ctrl_writeEnable,               // O: Write enable for regfile
+ ctrl_writeReg,                  // O: Register to write to in regfile
+ ctrl_readRegA,                  // O: Register to read from port A of regfile
+ ctrl_readRegB,                  // O: Register to read from port B of regfile
+ data_writeReg,                  // O: Data to write to for regfile
+ data_readRegA,                  // I: Data from port A of regfile
+ data_readRegB                   // I: Data from port B of regfile
 );
-    // Control signals
-    input 			clock,
+	// Control signals
+	input 			clock,
 						reset;
 
-    // Imem
-    output [11:0] address_imem;
-    input [31:0] 	q_imem;
+	// Imem
+	output [11:0] 	address_imem;
+	input [31:0] 	q_imem;
 
-    // Dmem
-    output [11:0] address_dmem;
-    output [31:0] data;
-    output 			wren;
-    input [31:0] 	q_dmem;
+	// Dmem
+	output [11:0] 	address_dmem;
+	output [31:0] 	data;
+	output 			wren;
+	input [31:0] 	q_dmem;
 
-    // Regfile
-    output 			ctrl_writeEnable;
-    output [4:0]  ctrl_writeReg,
+	// Regfile
+	output 			ctrl_writeEnable;
+	output [4:0]  	ctrl_writeReg,
 						ctrl_readRegA,
 						ctrl_readRegB;
-    output [31:0] data_writeReg;
-    input [31:0]  data_readRegA,
+	output [31:0] 	data_writeReg;
+	input [31:0]  	data_readRegA,
 						data_readRegB;
-	 
-	 wire [31:0] 	fetch_imem_extended,
-						fetch_PC_increment,
-						fetch_PC,
-						fetch_PC_next,
-						fetch_PC_next_latched,
-						fetch_IR_latched,
-						decode_imm,
-						decode_PC_next_latched,
-						decode_IR_latched,
-						decode_imm_latched,
-						decode_data_readRegA_latched,
-						decode_data_readRegB_latched,
-						execute_dataA,
-						execute_data_latched,
-						execute_dataB,
-						execute_multdiv_result,
-						execute_target,
-						execute_PC_next,
-						execute_PC_next_latched,
-						execute_PC_plus1_latched,
-						execute_bne_blt_or_jump,
-						execute_ALU_result,
-						execute_ALU_result_latched,
-						execute_bypass_dataA,
-						execute_bypass_dataB,
-						execute_op_inA,
-						execute_op_inB,
-						memory_ALU_result_latched,
-						memory_PC_plus1_latched,
-						memory_data_read_latched;
-	 wire [16:0]	decode_imm_raw;
-	 wire [13:0]	decode_ctrls,
-	 					decode_ctrls_latched,
-						execute_ctrls,
-						execute_ctrls_latched,
-						memory_ctrls_latched;
-	 wire [11:0]	fetch_jump_branch_pc;
-	 wire [4:0]		rstatus,
-						rzero,
-						r31,
-						decode_rs,
-						decode_rt,
-						decode_rd,
-						decode_regB,
-						execute_rd_latched,
-						execute_shamt,
-						execute_aluop,
-						execute_reg_A,
-						execute_reg_B,
-						memory_rd_latched,
-						memory_ctrl_writeReg,
-						add_aluop;
-	 wire 			decode_uses_rd,
-						decode_jr,
-						decode_bne_or_blt,
-						decode_weDM,
-						decode_bex,
-						decode_uses_imm,
-						decode_imm_neg,
-						decode_mult_or_div,
-						decode_mult,
-						decode_div,
-						execute_uses_addition,
-						execute_mult_or_div,
-						execute_branch_taken,
-						execute_jump_branch_taken_latched,
-						execute_is_aluop,
-						execute_eq,
-						execute_gt,
-						execute_jump,
-						execute_j2,
-						execute_bne_taken,
-						execute_blt_taken,
-						execute_bex_taken,
-						execute_uses_imm,
-						execute_multdiv_ready,
-						execute_branch_or_jump,
-						memory_branch_or_jump,
-						memory_jump,
-						writeback_jal,
-						writeback_is_aluop,
-						stall,
-						stall_multdiv,
-						mult_ctrl,
-						div_ctrl,
-						uses_mx_bypass_regA,
-						uses_mx_bypass_regB,
-						uses_wx_bypass_regA,
-						uses_wx_bypass_regB,
-						HIGH,
-						LOW;
-	 
-	 /* CONSTANTS */
-	 assign HIGH 	 				= 1'b1;
-	 assign LOW 	 				= 1'b0;
-	 assign rstatus 				= 5'd30;
-	 assign rzero   				= 5'b0;
-	 assign r31		 				= 5'd31;
-	 assign fetch_PC_increment = 32'd1;
-	 assign add_aluop				= 5'b0;
-	 
-	 /* BYPASS LOGIC */
-	bypass_logic bypass (
-		.uses_mx_bypass_regA		(uses_mx_bypass_regA),
-		.uses_mx_bypass_regB		(uses_mx_bypass_regB),
-		.uses_wx_bypass_regA		(uses_wx_bypass_regA),
-		.uses_wx_bypass_regB		(uses_wx_bypass_regB),
-		.execute_bypass_dataA	(execute_bypass_dataA),
-		.execute_bypass_dataB	(execute_bypass_dataB),
-		.execute_regA				(execute_reg_A),
-		.execute_regB				(execute_reg_B),
-		.memory_rd					(execute_rd_latched),
-		.memory_data				(execute_ctrls_latched[4] ? q_imem : execute_ALU_result_latched),
-		.writeback_rd				(memory_ctrl_writeReg),
-		.writeback_data			(ctrl_writeReg)
-	);
-	 
-	 /* STALL LOGIC */
-	 assign execute_mult_or_div 	= decode_ctrls_latched[12];
-	 assign stall_multdiv 			= execute_mult_or_div & ~execute_multdiv_ready;
-	 assign stall 						= stall_multdiv;
-		
-	 /* FETCH STAGE */
-	 assign fetch_jump_branch_pc 	= memory_jump ? execute_PC_next_latched[11:0] : execute_ALU_result_latched[11:0];
-	 assign address_imem 			= execute_jump_branch_taken_latched ? fetch_jump_branch_pc : fetch_PC[11:0];
-	 assign fetch_imem_extended 	= {20'b0, address_imem};
-	 
-	 register pc_reg (
-		.data	 (fetch_PC_next),
-		.enable(~stall),
-		.reset (reset),
-		.clk	 (~clock),
-		.out	 (fetch_PC)
-	 );
-	 
-	 cla_32 pc_next (
-		.sum		(fetch_PC_next),
-		.overflow(),
-		.a			(fetch_imem_extended),
-		.b			(fetch_PC_increment),
-		.c_in		(LOW)
-	 );
-	 
-	 FD_latch fd_latch (
-		.out_IR	   (fetch_IR_latched),
-		.out_PC_next(fetch_PC_next_latched),
-		.wren	      (~stall),								
-		.clock	   (~clock),
-		.reset	   (reset | memory_branch_or_jump),
-		.in_IR	   (q_imem),
-		.in_PC_next	(fetch_PC)
-	 );
-	 
-	/* DECODE STAGE */
-		op_decoder opdec (
-		.mult				(decode_ctrls[13]),
-		.mult_or_div	(decode_ctrls[12]),
-		.bne				(decode_ctrls[11]),
-		.blt				(decode_ctrls[10]),
-		.bex				(decode_ctrls[9]),
-		.jump				(decode_ctrls[8]),
-		.j2				(decode_ctrls[7]),
-		.weDM				(decode_ctrls[6]),
-		.weReg			(decode_ctrls[5]),
-		.weRegDM			(decode_ctrls[4]),
-		.ALUop			(decode_ctrls[3]),
-		.immediate		(decode_ctrls[2]),
-		.weReturn		(decode_ctrls[1]),
-		.weStatus		(decode_ctrls[0]),
-		.instr			(fetch_IR_latched)
+					
+	wire 			  	flush;
+	
+	// Fetch
+	reg [31:0] 	pc;
+	
+	// FD latch
+	reg [31:0] 	fd_pc_next,
+					fd_IR;
+	
+	always @(negedge clock) begin
+		fd_pc_next  = pc + 1;
+		fd_IR		   = q_imem;
+	end
+
+	// Decode
+	wire [4:0]		d_rs, d_rt, d_rd;
+	wire 				d_rd_read;
+	
+	op_decoder d_decode (
+		.rs				(d_rs),
+		.rt				(d_rt),
+		.rd				(d_rd),
+		.rd_read			(d_rd_read),
+		.instr			(fd_IR)
 	);
 	
-	assign decode_jr 			 	= decode_ctrls[8] & decode_ctrls[7];
-	assign decode_bne_or_blt 	= decode_ctrls[10] | decode_ctrls[11];
-	assign decode_weDM 			= decode_ctrls[6];
-	assign decode_bex 			= decode_ctrls[9];
+	assign ctrl_readRegA = d_rs;
+	assign ctrl_readRegB	= d_rd_read ? d_rd : d_rt;
 	
-	assign decode_uses_rd = ~decode_bex
-		&	(decode_weDM
-		|	decode_bne_or_blt
-		|	decode_jr);
+	// DX Latch
+	reg [31:0]		dx_readRegA, dx_readRegB, dx_IR, dx_pc_next;
 	
+	always @(negedge clock) begin
+		dx_pc_next	= fd_pc_next;
+		dx_IR		  	= fd_IR;
+		dx_readRegA = data_readRegA;
+		dx_readRegB = data_readRegB;
+	end
 	
-	assign decode_rs = fetch_IR_latched[21:17];
-	assign decode_rt = fetch_IR_latched[16:12];
-	assign decode_rd = fetch_IR_latched[26:22];
+	// Execute
+	wire 				e_jr, e_blt, e_bne, e_jump, e_immediate, e_ALUop,
+						e_branch_taken, e_neq, e_lt;
+	wire [4:0]		e_ALUopcode, e_shamt;
+	wire [31:0]		e_ALUresult, e_pc_next, e_jump_pc, e_imm_val, e_target;
 	
-	assign decode_regB 		= decode_uses_rd ? decode_rd : decode_rt;
-	assign decode_imm_neg 	= fetch_IR_latched[16];
-	assign decode_imm_raw	= fetch_IR_latched[16:0];
-						
-	assign ctrl_readRegA = decode_bex 		? rstatus : decode_rs;
-	assign ctrl_readRegB = decode_bex 		? rzero : decode_regB;
-	assign decode_imm 	= decode_imm_neg 	? {15'b1, decode_imm_raw} : {15'b0, decode_imm_raw};
-	
-	// Reset multdiv
-	assign decode_mult_or_div 		= decode_ctrls[12];
-	assign execute_mult_or_div 	= decode_ctrls_latched[12];
-	
-	assign execute_mult 				= decode_ctrls[13];
-	assign execute_div				= ~decode_ctrls[13];
-	
-	assign mult_ctrl 		= decode_mult_or_div & ~execute_mult_or_div & execute_mult;
-	assign div_ctrl		= decode_mult_or_div & ~execute_mult_or_div & execute_div;
-	
-	
-	DX_latch dx_latch (
-		.out_PC_next		(decode_PC_next_latched),												
-		.out_ctrl_signals	(decode_ctrls_latched),										
-		.out_immediate		(decode_imm_latched),							
-		.out_instr			(decode_IR_latched),
-		.out_data_readRegA(decode_data_readRegA_latched),
-		.out_data_readRegB(decode_data_readRegB_latched),
-		.out_regA			(execute_reg_A),
-		.out_regB			(execute_reg_B),
-		.wren					(~stall),																					// TODO add logic
-		.clock				(~clock),
-		.reset				(reset | memory_branch_or_jump),
-		.in_PC_next			(fetch_PC_next_latched),
-		.in_ctrl_signals	(decode_ctrls),
-		.in_immediate		(decode_imm),
-		.in_instr			(fetch_IR_latched),
-		.in_data_readRegA	(data_readRegA),
-		.in_data_readRegB	(data_readRegB),
-		.in_regA				(ctrl_readRegA),
-		.in_regB				(ctrl_readRegB)
+	op_decoder e_decode (
+		.jr				(e_jr),
+		.bne				(e_bne),
+		.blt				(e_blt),
+		.jump				(e_jump),
+		.immediate		(e_immediate),
+		.ALUopcode		(e_ALUopcode),
+		.ALUop			(e_ALUop),
+		.shamt			(e_shamt),
+		.imm_val			(e_imm_val),
+		.target			(e_target),
+		.instr			(dx_IR)
 	);
 	
-	/* EXECUTE STAGE */
-	assign execute_bne_blt_or_jump = decode_ctrls_latched[11] | decode_ctrls_latched[10] | decode_ctrls_latched[8];
-	assign execute_uses_imm 		 = decode_ctrls_latched[2];
-	assign execute_is_aluop 		 = decode_ctrls_latched[3];
-	assign execute_uses_addition	 = decode_ctrls_latched[6]
-		| decode_ctrls_latched[4]
-		| decode_ctrls_latched[11]
-		| decode_ctrls_latched[10];
-	
-	assign execute_op_inA = (uses_mx_bypass_regA | uses_wx_bypass_regA) ? execute_bypass_dataA : decode_data_readRegA_latched;
-	assign execute_op_inB = (uses_mx_bypass_regB | uses_wx_bypass_regB) ? execute_bypass_dataB : decode_data_readRegB_latched;
-	
-	assign execute_dataA = execute_bne_blt_or_jump ? decode_PC_next_latched : execute_op_inA;
-	assign execute_dataB = execute_uses_imm ? decode_imm_latched : execute_op_inB;
-	
-	assign execute_aluop =	execute_is_aluop? decode_IR_latched[6:2] : add_aluop;
-	assign execute_shamt	= decode_IR_latched[11:7];
-		
 	alu alu (
-		.data_operandA	(execute_dataA),
-		.data_operandB	(execute_dataB),
-		.ctrl_ALUopcode(execute_aluop),
-		.ctrl_shiftamt	(execute_shamt),
-		.data_result	(execute_ALU_result),
-		.isNotEqual		(),
-		.isLessThan		(),
-		.overflow		()
+		.data_operandA	(dx_readRegA),
+		.data_operandB	(e_immediate ? e_imm_val : dx_readRegB),
+		.ctrl_ALUopcode(e_ALUop ? e_ALUopcode : 5'b0),
+		.ctrl_shiftamt	(e_shamt),
+		.data_result	(e_ALUresult)
 	);
 	
-	// rd < rs or rd != rs
-	comp_32 branch_comp (
-		.eq	 (execute_eq),
-		.gt	 (execute_gt),
-		.enable(HIGH),
-		.in_0	 (decode_data_readRegB_latched),
-		.in_1	 (decode_data_readRegA_latched)
+	comp_32 comp(
+		.neq	(e_neq),
+		.lt	(e_lt),
+		.num0	(dx_readRegB), // rd
+		.num1	(dx_readRegA)	// rs
 	);
 	
-	multdiv mult_div (
-		.data_operandA	(execute_dataA),
-		.data_operandB	(execute_dataB), 
-		.ctrl_MULT	  	(mult_ctrl),
-		.ctrl_DIV	  	(div_ctrl),
-		.clock		  	(clock),  
-		.data_result  	(execute_multdiv_result),
-		.data_exception(),
-		.data_resultRDY(execute_multdiv_ready)
+	assign e_branch_taken = (e_blt & e_lt) | (e_bne & e_neq);
+	assign flush 		 	 = (e_branch_taken | e_jump);
+	assign e_jump_pc		 = e_jr ? dx_readRegB : e_target;
+	assign e_pc_next		 = e_branch_taken ? (dx_pc_next + e_imm_val) : e_jump_pc; 
+	
+	// XM Latch
+	reg						xm_flush;
+	reg [31:0]				xm_pc_next, xm_ALUresult, xm_data_rd, xm_IR, xm_link;
+	
+	always @(negedge clock) begin
+		xm_flush			= flush;
+		xm_link			= dx_pc_next;
+		xm_pc_next		= e_pc_next;
+		xm_ALUresult	= e_ALUresult;
+		xm_data_rd		= dx_readRegB;
+		xm_IR				= dx_IR;
+	end
+	
+	// Memory
+	op_decoder m_decode (
+		.weDM				(wren),
+		.instr			(xm_IR)
 	);
 
+	always @(negedge clock) begin
+		pc = {20'b0, address_imem};
+	end
 	
-	// Handle branches and jumps
-	assign execute_branch_or_jump = execute_branch_taken | decode_ctrls_latched[8];
-	assign execute_bne_taken		= decode_ctrls_latched[11] & ~execute_eq;
-	assign execute_blt_taken		= decode_ctrls_latched[10] & ~execute_eq & ~execute_gt;
-	assign execute_bex_taken		= decode_ctrls_latched[9] & ~execute_eq;
-	assign execute_jump				= decode_ctrls_latched[8];
-	assign execute_j2					= decode_ctrls_latched[7];
+	assign address_imem = xm_flush ? xm_pc_next[11:0] : fd_pc_next[11:0];
 	
-	assign execute_branch_taken = execute_bne_taken
-		| execute_blt_taken
-		| execute_bex_taken;
+	assign address_dmem = xm_ALUresult[11:0];
+	assign data 		  = xm_data_rd;
 	
-	assign execute_target  = {5'b0, decode_IR_latched[26:0]};
-	assign execute_PC_next = execute_branch_taken ?
-		32'bZ : (execute_jump ? (execute_j2 ? execute_dataB : execute_target) 
-		: decode_PC_next_latched);
-	assign execute_PC_next = (execute_blt_taken | execute_bne_taken) ? execute_ALU_result : 32'bZ;
-	assign execute_PC_next = execute_bex_taken ? execute_target : 32'bZ;
-
-		
-	XM_latch xm_latch (
-		.out_PC_next	  (execute_PC_next_latched),
-		.out_PC_plus1	  (execute_PC_plus1_latched),
-		.out_ctrl_signals(execute_ctrls_latched),									
-		.out_ALU_result  (execute_ALU_result_latched),
-		.out_data_reg	  (execute_data_latched),
-		.out_rd			  (execute_rd_latched),
-		.out_branch_taken(execute_jump_branch_taken_latched),
-		.wren				  (HIGH),																					// TODO add logic
-		.clock			  (~clock),
-		.reset			  (reset | memory_branch_or_jump),
-		.in_PC_next		  (execute_PC_next),
-		.in_PC_plus1	  (decode_PC_next_latched),
-		.in_ctrl_signals (decode_ctrls_latched),
-		.in_ALU_result	  (decode_ctrls_latched[12] ? execute_multdiv_result : execute_ALU_result),
-		.in_data_reg	  (decode_data_readRegB_latched),
-		.in_rd			  (decode_IR_latched[26:22]),
-		.in_branch_taken (execute_branch_or_jump)
+	// MW Latch
+	reg [31:0]			mw_ALUresult, mw_IR, mw_link, mw_mem_data;
+	
+	always @(negedge clock) begin
+		mw_mem_data		=	q_dmem;
+		mw_ALUresult	= xm_ALUresult;
+		mw_IR				= xm_IR;
+		mw_link			= xm_link;
+	end
+	
+	// Writeback
+	wire 			w_weReg, w_weRegDM, w_jal;
+	wire [4:0]	w_rd;
+	op_decoder w_decode (
+		.weRegDM			(w_weRegDM),
+		.rd				(w_rd),
+		.jal				(w_jal),
+		.weReg			(w_weReg),
+		.instr			(mw_IR)
 	);
 	
-	/* MEMORY STAGE */
-	assign memory_branch_or_jump = execute_jump_branch_taken_latched;
-	assign address_dmem = execute_ALU_result_latched[11:0];
-	assign data 		  = execute_data_latched;
-	assign wren 		  = execute_ctrls_latched[6];
-	assign memory_jump  = execute_ctrls_latched[8];
+	assign ctrl_writeEnable = w_weReg;
+	assign ctrl_writeReg 	= w_jal ? 5'd31 : w_rd;
+	assign data_writeReg 	= w_jal ? mw_link : (w_weRegDM ? mw_mem_data : mw_ALUresult);
 	
-	MW_latch mx_latch (
-		.out_ALU_result	(memory_ALU_result_latched),
-		.out_data_read		(memory_data_read_latched),
-		.out_rd				(memory_ctrl_writeReg),
-		.out_ctrl_signals	(memory_ctrls_latched),
-		.out_PC_next		(memory_PC_plus1_latched),
-		.wren					(HIGH),																					// TODO add logic
-		.clock				(~clock),
-		.reset				(reset),
-		.in_ALU_result		(execute_ALU_result_latched),
-		.in_data_read		(q_dmem),
-		.in_rd				(execute_rd_latched),
-		.in_ctrl_signals	(execute_ctrls_latched),
-		.in_PC_next			(execute_PC_plus1_latched)
-	);
+	// Initialize
+	initial begin
+		fd_pc_next  = 0;
+		fd_IR		   = 0;
+		dx_IR		  	= 0;
+		dx_readRegA = 0;
+		dx_readRegB = 0;
+		pc				= 0;
+		xm_flush		= 0;
+		xm_pc_next	= 0;
+		xm_ALUresult= 0;
+		xm_data_rd	= 0;
+		xm_link		= 0;
+		mw_ALUresult= 0;
+		mw_IR			= 0;
+		mw_link		= 0;
+	end
 	
-	/* WRITEBACK STAGE */
-	assign writeback_is_aluop  = memory_ctrls_latched[3];
-	assign writeback_jal 		= memory_ctrls_latched[8] & memory_ctrls_latched[1];
-	assign ctrl_writeEnable 	= memory_ctrls_latched[5];
-	
-	assign ctrl_writeReg = writeback_jal ? r31 : memory_ctrl_writeReg;
-	assign data_writeReg = writeback_jal ? memory_PC_plus1_latched
-		: (memory_ctrls_latched[4] ? q_imem : memory_ALU_result_latched);
-//		: (memory_ctrls_latched[3] ? memory_ALU_result_latched : memory_data_read_latched);
+//	// Flush and reset
+//	always @(flush or reset) begin
+//		if (flush | reset) begin
+//			fd_pc_next  = 0;
+//			fd_IR		   = 0;
+//			dx_IR		  	= 0;
+//			dx_readRegA = 0;
+//			dx_readRegB = 0;
+//		end
+//		if (reset) begin
+//			pc					= 0;
+//			xm_flush			= 0;
+//			xm_pc_next		= 0;
+//			xm_ALUresult	= 0;
+//			xm_data_rd		= 0;
+//			xm_link			= 0;
+//			mw_ALUresult	= 0;
+//			mw_IR				= 0;
+//			mw_link			= 0;
+//		end
+//	end
 
 endmodule

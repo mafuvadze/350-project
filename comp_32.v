@@ -5,12 +5,11 @@ module comp_32(
 	num1
 );
 
-	input [31:0] data_operandA, data_operandB;
+	input signed [31:0] num0, num1;
 	
 	output neq, lt;
 
-	assign neq 	= data_operandA != data_operandB;
-	assign lt	= (data_operandA[31] == 1 & data_operandB[31] == 0)
-		| ((data_operandA[31] == data_operandB[31]) & data_operandA < data_operandB);
+	assign neq 	= num0 != num1;
+	assign lt	= num0 < num1;
 	
 endmodule

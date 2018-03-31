@@ -7,44 +7,25 @@ module processor_tb();
 					reg3,
 					reg4,
 					reg5,
-					rstatus,
 					r31,
-					data,
-					data_writeReg,
+					address_imem,
+					pc,
 					q_imem,
-					q_dmem;
-	wire [13:0]	ctrl;
-	wire [11:0] PC,
-					address_dmem,
-					address_imem;
-	wire [4:0]	ctrl_writeReg;
-	wire			wren,
-					ctrl_writeEnable,
-					branch_taken;
-
+					temp;
 	
 	skeleton tester (clock, reset);
 	
-	assign reg1 = tester.my_regfile.reg_1.out;
-	assign reg2 = tester.my_regfile.reg_2.out;
-	assign reg3 = tester.my_regfile.reg_3.out;
-	assign reg4 = tester.my_regfile.reg_4.out;
-	assign reg5 = tester.my_regfile.reg_5.out;
-	assign rstatus = tester.my_regfile.reg_30.out;
-	assign r31 = tester.my_regfile.reg_31.out;
+	assign reg1 = tester.my_regfile.regfile32[1];
+	assign reg2 = tester.my_regfile.regfile32[2];
+	assign reg3 = tester.my_regfile.regfile32[3];
+	assign reg4 = tester.my_regfile.regfile32[4];
+	assign reg5 = tester.my_regfile.regfile32[5];
+	assign r31 	= tester.my_regfile.regfile32[31];
 	
-	assign data = tester.my_processor.data;
-	assign data_writeReg = tester.my_processor.execute_bypass_dataA;//data_writeReg;
-	assign PC = tester.address_imem;
+	assign address_imem = {20'b0, tester.address_imem};
+	assign pc	= tester.my_processor.pc;
 	assign q_imem = tester.q_imem;
-	assign q_dmem = tester.q_dmem;
-	assign address_dmem = tester.my_processor.address_dmem;
-	assign address_imem = tester.my_processor.address_imem;
-	assign wren = tester.my_processor.wren;
-	assign ctrl_writeEnable = tester.my_processor.ctrl_writeEnable;
-	assign ctrl_writeReg = tester.my_processor.ctrl_writeReg;
-	assign branch_taken = tester.my_processor.bypass.uses_mx_bypass_regA;//memory_branch_or_jump;
-	assign ctrl = tester.my_processor.memory_ctrls_latched;
+	assign temp = tester.my_processor.w_rd;
 	
 	initial begin
 		clock = 0;

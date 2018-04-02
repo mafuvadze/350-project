@@ -32,7 +32,7 @@ module processor_tb();
 	assign address_imem = {20'b0, tester.address_imem};
 	assign pc	= tester.my_processor.pc;
 	assign q_imem = tester.q_imem;
-	assign temp = tester.my_processor.xm_flush;
+	assign temp = tester.my_processor.q_dmem;
 	assign writeReg = tester.my_processor.ctrl_writeReg;
 	assign writeData = tester.my_processor.data_writeReg;
 	assign writeEnable = tester.my_processor.ctrl_writeEnable;

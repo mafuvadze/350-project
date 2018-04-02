@@ -93,23 +93,26 @@ module processor(
 	output [31:0] 	data_writeReg;
 	input [31:0]  	data_readRegA,
 						data_readRegB;
-					
-	wire 			  	flush;
-	
+						
+	// Bypass/Stall controls
+	wire 				wx_bypassA,
+						wx_bypassB,
+						mx_bypassA,
+						mx_bypassB,
+						stall,
+						mx_lw_bypass;
+						
 	// Fetch
 	reg [31:0]		pc;
 	
 	// FD latch
-	reg [31:0] 	fd_pc_next,
-					fd_IR;
-	
-	always @(negedge clock) begin
-		fd_pc_next  <= pc + 1;
-		fd_IR		   <= q_imem;
-	end
+	reg [31:0] 		fd_pc_next,
+						fd_IR;
 
 	// Decode
-	wire [4:0]		d_rs, d_rt, d_rd;
+	wire [4:0]		d_rs,
+						d_rt,
+						d_rd;
 	wire 				d_rd_read;
 	
 	op_decoder d_decode (
@@ -124,20 +127,33 @@ module processor(
 	assign ctrl_readRegB	= d_rd_read ? d_rd : d_rt;
 	
 	// DX Latch
-	reg [31:0]		dx_readRegA, dx_readRegB, dx_IR, dx_pc_next;
-	
-	always @(negedge clock) begin
-		dx_pc_next	<= fd_pc_next;
-		dx_IR		  	<= fd_IR;
-		dx_readRegA <= data_readRegA;
-		dx_readRegB <= data_readRegB;
-	end
+	reg [31:0]		dx_readRegA,
+						dx_readRegB,
+						dx_IR,
+						dx_pc_next;
+	reg [4:0]		dx_regA,
+						dx_regB;
 	
 	// Execute
-	wire 				e_jr, e_blt, e_bne, e_jump, e_immediate, e_ALUop,
-						e_branch_taken, e_neq, e_lt;
-	wire [4:0]		e_ALUopcode, e_shamt;
-	wire [31:0]		e_ALUresult, e_pc_next, e_jump_pc, e_imm_val, e_target;
+	wire [31:0]		e_ALUresult,
+						e_flush,
+						e_pc_next,
+						e_jump_pc,
+						e_imm_val,
+						e_target,
+						e_regA,
+						e_regB;
+	wire [4:0]		e_ALUopcode,
+						e_shamt;	
+	wire 				e_jr,
+						e_blt,
+						e_bne,
+						e_jump,
+						e_immediate,
+						e_ALUop,
+						e_branch_taken,
+						e_neq,
+						e_lt;
 	
 	op_decoder e_decode (
 		.jr				(e_jr),
@@ -154,8 +170,8 @@ module processor(
 	);
 	
 	alu alu (
-		.data_operandA	(dx_readRegA),
-		.data_operandB	(e_immediate ? e_imm_val : dx_readRegB),
+		.data_operandA	(e_regA),
+		.data_operandB	(e_immediate ? e_imm_val : e_regB),
 		.ctrl_ALUopcode(e_ALUop ? e_ALUopcode : 5'b0),
 		.ctrl_shiftamt	(e_shamt),
 		.data_result	(e_ALUresult)
@@ -164,87 +180,135 @@ module processor(
 	comp_32 comp(
 		.neq	(e_neq),
 		.lt	(e_lt),
-		.num0	(dx_readRegB), // rd
-		.num1	(dx_readRegA)	// rs
+		.num0	(e_regB), // rd
+		.num1	(e_regA)	// rs
 	);
 	
 	assign e_branch_taken = (e_blt & e_lt) | (e_bne & e_neq);
-	assign flush 		 	 = (e_branch_taken | e_jump);
+	assign e_flush 		 = (e_branch_taken | e_jump);
 	assign e_jump_pc		 = e_jr ? dx_readRegB : e_target;
 	assign e_pc_next		 = e_branch_taken ? (dx_pc_next + e_imm_val) : e_jump_pc; 
 	
 	// XM Latch
+	reg [31:0]				xm_pc_next,
+								xm_ALUresult,
+								xm_data_rd,
+								xm_IR,
+								xm_link;
 	reg						xm_flush;
-	reg [31:0]				xm_pc_next, xm_ALUresult, xm_data_rd, xm_IR, xm_link;
-	
-	always @(negedge clock) begin
-		xm_flush			<= flush;
-		xm_link			<= dx_pc_next;
-		xm_pc_next		<= e_pc_next;
-		xm_ALUresult	<= e_ALUresult;
-		xm_data_rd		<= dx_readRegB;
-		xm_IR				<= dx_IR;
-	end
 	
 	// Memory
+	wire [31:0]				m_data_writeReg;
+	wire [4:0]				m_ctrl_writeReg, m_rd;
+	wire						m_jal,
+								m_weRegDM,
+								m_weReg,
+								m_ctrl_writeEnable;
+								
 	op_decoder m_decode (
 		.weDM				(wren),
+		.weRegDM			(m_weRegDM),
+		.rd				(m_rd),
+		.jal				(m_jal),
+		.weReg			(m_weReg),
 		.instr			(xm_IR)
 	);
-
-	always @(negedge clock) begin
-		pc = {20'b0, address_imem};
-	end
 	
 	assign address_imem = xm_flush ? xm_pc_next[11:0] : (pc + 1);
-	
 	assign address_dmem = xm_ALUresult[11:0];
 	assign data 		  = xm_data_rd;
 	
-	// MW Latch
-	reg [31:0]			mw_ALUresult, mw_IR, mw_link, mw_mem_data;
+	assign m_ctrl_writeEnable	= m_weReg;
+	assign m_data_writeReg 		= m_jal ? xm_link : (m_weRegDM ? q_dmem : xm_ALUresult);
+	assign m_ctrl_writeReg 		= m_jal ? 5'd31 : m_rd;
 	
+	// MW Latch
+	reg [31:0]			mw_data_writeReg,
+							mw_IR,
+							mw_link;
+	reg [4:0]			mw_ctrl_writeReg;
+	reg					mw_ctrl_writeEnable;
+	
+	// Writeback	
+	assign ctrl_writeEnable = mw_ctrl_writeEnable;
+	assign ctrl_writeReg 	= mw_ctrl_writeReg;
+	assign data_writeReg 	= mw_data_writeReg;
+	
+	// Latches
 	always @(negedge clock) begin
-		mw_mem_data		<= q_dmem;
-		mw_ALUresult	<= xm_ALUresult;
-		mw_IR				<= xm_IR;
-		mw_link			<= xm_link;
+		if (~stall) begin
+			// FD latches
+			pc 			<= {20'b0, address_imem};
+			fd_pc_next  <= pc + 1;
+			fd_IR		   <= q_imem;
+		
+			// DX latches
+			dx_regA		<= ctrl_readRegA;
+			dx_regB		<= ctrl_readRegB;
+			dx_pc_next	<= fd_pc_next;
+			dx_IR		  	<= fd_IR;
+			dx_readRegA <= data_readRegA;
+			dx_readRegB <= data_readRegB;
+		
+			// XM latches
+			xm_link			<= dx_pc_next;
+			xm_IR				<= dx_IR;
+			xm_data_rd		<= e_regB;
+			xm_flush			<= e_flush;
+			xm_pc_next		<= e_pc_next;
+			xm_ALUresult	<= e_ALUresult;
+		end else begin
+			// FD latches
+			fd_pc_next  <= 0;
+			fd_IR		   <= 0;
+		
+			// DX latches
+			dx_regA		<= 0;
+			dx_regB		<= 0;
+			dx_pc_next	<= 0;
+			dx_IR		  	<= 0;
+			dx_readRegA <= 0;
+			dx_readRegB <= 0;
+		
+			// XM latches
+			xm_link			<= 0;
+			xm_data_rd		<= 0;
+			xm_IR				<= 0;
+			xm_flush			<= 0;
+			xm_pc_next		<= 0;
+			xm_ALUresult	<= 0;
+		end
+	
+		// MW latches
+		mw_data_writeReg 		<= m_data_writeReg;
+		mw_ctrl_writeReg 		<= m_ctrl_writeReg;
+		mw_ctrl_writeEnable 	<= m_ctrl_writeEnable;
+		mw_IR						<= xm_IR;
+		mw_link					<= xm_link;
 	end
 	
-	// Writeback
-	wire 			w_weReg, w_weRegDM, w_jal;
-	wire [4:0]	w_rd;
-	op_decoder w_decode (
-		.weRegDM			(w_weRegDM),
-		.rd				(w_rd),
-		.jal				(w_jal),
-		.weReg			(w_weReg),
-		.instr			(mw_IR)
-	);
-	
-	assign ctrl_writeEnable = w_weReg;
-	assign ctrl_writeReg 	= w_jal ? 5'd31 : w_rd;
-	assign data_writeReg 	= w_jal ? mw_link : (w_weRegDM ? mw_mem_data : mw_ALUresult);
-	
-	// Initialize
+	// Initialize registers
 	initial begin
-		pc				= -1;
-		fd_pc_next  = 0;
-		fd_IR		   = 0;
-		dx_pc_next	= 0;
-		dx_IR		  	= 0;
-		dx_readRegA = 0;
-		dx_readRegB = 0;
-		xm_flush		= 0;
-		xm_link		= 0;
-		xm_pc_next	= 0;
-		xm_ALUresult= 0;
-		xm_data_rd	= 0;
-		xm_IR			= 0;
-		mw_ALUresult= 0;
-		mw_IR			= 0;
-		mw_link		= 0;
-		mw_mem_data = 0;
+		pc					= -1;
+		fd_pc_next  	= 0;
+		fd_IR		   	= 0;
+		dx_regA			= 0;
+		dx_regB			= 0;
+		dx_pc_next		= 0;
+		dx_IR		  		= 0;
+		dx_readRegA 	= 0;
+		dx_readRegB 	= 0;
+		xm_flush			= 0;
+		xm_link			= 0;
+		xm_pc_next		= 0;
+		xm_ALUresult	= 0;
+		xm_data_rd		= 0;
+		xm_IR				= 0;
+		mw_IR				= 0;
+		mw_link			= 0;
+		mw_data_writeReg 		= 0;
+		mw_ctrl_writeReg 		= 0;
+		mw_ctrl_writeEnable 	= 0;
 	end
 	
 	// Flush and reset
@@ -252,11 +316,14 @@ module processor(
 		if (xm_flush | reset) begin
 			fd_pc_next  <= 0;
 			fd_IR		   <= 0;
+			dx_regA		<= 0;
+			dx_regB		<= 0;
 			dx_pc_next	<= 0;
 			dx_IR		  	<= 0;
 			dx_readRegA <= 0;
 			dx_readRegB <= 0;
 		end
+		
 		if (reset) begin
 			pc				<= 0;
 			xm_flush		<= 0;
@@ -265,11 +332,28 @@ module processor(
 			xm_ALUresult<= 0;
 			xm_data_rd	<= 0;
 			xm_IR			<= 0;
-			mw_ALUresult<= 0;
 			mw_IR			<= 0;
 			mw_link		<= 0;
-			mw_mem_data <= 0;
+			mw_data_writeReg 		= 0;
+			mw_ctrl_writeReg 		= 0;
+			mw_ctrl_writeEnable 	= 0;
 		end
 	end
-
+	
+	// Bypass/Stall
+	assign mx_lw_bypass = m_weRegDM
+		& ((m_ctrl_writeEnable & (dx_regA == m_ctrl_writeReg) & m_ctrl_writeReg != 0)
+		| (m_ctrl_writeEnable & (dx_regB == m_ctrl_writeReg) & m_ctrl_writeReg != 0));
+	
+	assign stall		= mx_lw_bypass;
+	
+	assign wx_bypassA = ctrl_writeEnable & (dx_regA == ctrl_writeReg) & (ctrl_writeReg != 0);
+	assign wx_bypassB = ctrl_writeEnable & (dx_regB == ctrl_writeReg) & (ctrl_writeReg != 0);
+	
+	assign mx_bypassA = m_ctrl_writeEnable & ~m_weRegDM & (dx_regA == m_ctrl_writeReg) & m_ctrl_writeReg != 0;
+	assign mx_bypassB = m_ctrl_writeEnable & ~m_weRegDM & (dx_regB == m_ctrl_writeReg) & m_ctrl_writeReg != 0;
+	
+	assign e_regA		= mx_bypassA ? m_data_writeReg : (wx_bypassA ? data_writeReg : dx_readRegA);
+	assign e_regB		= mx_bypassB ? m_data_writeReg : (wx_bypassB ? data_writeReg : dx_readRegB);	
+	
 endmodule

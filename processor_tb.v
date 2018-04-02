@@ -11,7 +11,14 @@ module processor_tb();
 					address_imem,
 					pc,
 					q_imem,
-					temp;
+					decode,
+					execute,
+					memory,
+					writeback,
+					temp,
+					writeReg,
+					writeData,
+					writeEnable;
 	
 	skeleton tester (clock, reset);
 	
@@ -25,7 +32,15 @@ module processor_tb();
 	assign address_imem = {20'b0, tester.address_imem};
 	assign pc	= tester.my_processor.pc;
 	assign q_imem = tester.q_imem;
-	assign temp = tester.my_processor.w_rd;
+	assign temp = tester.my_processor.xm_flush;
+	assign writeReg = tester.my_processor.ctrl_writeReg;
+	assign writeData = tester.my_processor.data_writeReg;
+	assign writeEnable = tester.my_processor.ctrl_writeEnable;
+	
+	assign decode = tester.my_processor.fd_IR;
+	assign execute = tester.my_processor.dx_IR;
+	assign memory = tester.my_processor.xm_IR;
+	assign writeback = tester.my_processor.mw_IR;
 	
 	initial begin
 		clock = 0;

@@ -97,15 +97,15 @@ module processor(
 	wire 			  	flush;
 	
 	// Fetch
-	reg [31:0] 	pc;
+	reg [31:0]		pc;
 	
 	// FD latch
 	reg [31:0] 	fd_pc_next,
 					fd_IR;
 	
 	always @(negedge clock) begin
-		fd_pc_next  = pc + 1;
-		fd_IR		   = q_imem;
+		fd_pc_next  <= pc + 1;
+		fd_IR		   <= q_imem;
 	end
 
 	// Decode
@@ -127,10 +127,10 @@ module processor(
 	reg [31:0]		dx_readRegA, dx_readRegB, dx_IR, dx_pc_next;
 	
 	always @(negedge clock) begin
-		dx_pc_next	= fd_pc_next;
-		dx_IR		  	= fd_IR;
-		dx_readRegA = data_readRegA;
-		dx_readRegB = data_readRegB;
+		dx_pc_next	<= fd_pc_next;
+		dx_IR		  	<= fd_IR;
+		dx_readRegA <= data_readRegA;
+		dx_readRegB <= data_readRegB;
 	end
 	
 	// Execute
@@ -178,12 +178,12 @@ module processor(
 	reg [31:0]				xm_pc_next, xm_ALUresult, xm_data_rd, xm_IR, xm_link;
 	
 	always @(negedge clock) begin
-		xm_flush			= flush;
-		xm_link			= dx_pc_next;
-		xm_pc_next		= e_pc_next;
-		xm_ALUresult	= e_ALUresult;
-		xm_data_rd		= dx_readRegB;
-		xm_IR				= dx_IR;
+		xm_flush			<= flush;
+		xm_link			<= dx_pc_next;
+		xm_pc_next		<= e_pc_next;
+		xm_ALUresult	<= e_ALUresult;
+		xm_data_rd		<= dx_readRegB;
+		xm_IR				<= dx_IR;
 	end
 	
 	// Memory
@@ -196,7 +196,7 @@ module processor(
 		pc = {20'b0, address_imem};
 	end
 	
-	assign address_imem = xm_flush ? xm_pc_next[11:0] : fd_pc_next[11:0];
+	assign address_imem = xm_flush ? xm_pc_next[11:0] : (pc + 1);
 	
 	assign address_dmem = xm_ALUresult[11:0];
 	assign data 		  = xm_data_rd;
@@ -205,10 +205,10 @@ module processor(
 	reg [31:0]			mw_ALUresult, mw_IR, mw_link, mw_mem_data;
 	
 	always @(negedge clock) begin
-		mw_mem_data		=	q_dmem;
-		mw_ALUresult	= xm_ALUresult;
-		mw_IR				= xm_IR;
-		mw_link			= xm_link;
+		mw_mem_data		<= q_dmem;
+		mw_ALUresult	<= xm_ALUresult;
+		mw_IR				<= xm_IR;
+		mw_link			<= xm_link;
 	end
 	
 	// Writeback
@@ -228,42 +228,48 @@ module processor(
 	
 	// Initialize
 	initial begin
+		pc				= -1;
 		fd_pc_next  = 0;
 		fd_IR		   = 0;
+		dx_pc_next	= 0;
 		dx_IR		  	= 0;
 		dx_readRegA = 0;
 		dx_readRegB = 0;
-		pc				= 0;
 		xm_flush		= 0;
+		xm_link		= 0;
 		xm_pc_next	= 0;
 		xm_ALUresult= 0;
 		xm_data_rd	= 0;
-		xm_link		= 0;
+		xm_IR			= 0;
 		mw_ALUresult= 0;
 		mw_IR			= 0;
 		mw_link		= 0;
+		mw_mem_data = 0;
 	end
 	
-//	// Flush and reset
-//	always @(flush or reset) begin
-//		if (flush | reset) begin
-//			fd_pc_next  = 0;
-//			fd_IR		   = 0;
-//			dx_IR		  	= 0;
-//			dx_readRegA = 0;
-//			dx_readRegB = 0;
-//		end
-//		if (reset) begin
-//			pc					= 0;
-//			xm_flush			= 0;
-//			xm_pc_next		= 0;
-//			xm_ALUresult	= 0;
-//			xm_data_rd		= 0;
-//			xm_link			= 0;
-//			mw_ALUresult	= 0;
-//			mw_IR				= 0;
-//			mw_link			= 0;
-//		end
-//	end
+	// Flush and reset
+		always @(xm_flush or reset) begin
+		if (xm_flush | reset) begin
+			fd_pc_next  <= 0;
+			fd_IR		   <= 0;
+			dx_pc_next	<= 0;
+			dx_IR		  	<= 0;
+			dx_readRegA <= 0;
+			dx_readRegB <= 0;
+		end
+		if (reset) begin
+			pc				<= 0;
+			xm_flush		<= 0;
+			xm_link		<= 0;
+			xm_pc_next	<= 0;
+			xm_ALUresult<= 0;
+			xm_data_rd	<= 0;
+			xm_IR			<= 0;
+			mw_ALUresult<= 0;
+			mw_IR			<= 0;
+			mw_link		<= 0;
+			mw_mem_data <= 0;
+		end
+	end
 
 endmodule

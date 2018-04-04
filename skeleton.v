@@ -9,9 +9,13 @@
  * inspect which signals the processor tries to assert when.
  */
 
-module skeleton(clock, reset);
-    input clock, reset;
+module skeleton(CLOCK_50, GPIO);
+    input 			CLOCK_50;
+	 inout [35:0]	GPIO;
 
+	 wire 			reset;
+	 assign 			reset = 0;
+	 
     /** IMEM **/
     // Figure out how to generate a Quartus syncram component and commit the generated verilog file.
     // Make sure you configure it correctly!
@@ -19,7 +23,7 @@ module skeleton(clock, reset);
     wire [31:0] q_imem;
     imem my_imem(
         .address    (address_imem),            // address of data
-        .clock      (~clock),                  // you may need to invert the clock
+        .clock      (~CLOCK_50),                  // you may need to invert the clock
         .q          (q_imem)                   // the raw instruction
     );
 
@@ -32,7 +36,7 @@ module skeleton(clock, reset);
     wire [31:0] q_dmem;
     dmem my_dmem(
         .address    (address_dmem),       	  // address of data
-        .clock      (~clock),                  // may need to invert the clock
+        .clock      (~CLOCK_50),                  // may need to invert the clock
         .data	     (data),    					  // data you want to write
         .wren	     (wren),      				  // write enable
         .q          (q_dmem)    					  // data from dmem
@@ -45,7 +49,7 @@ module skeleton(clock, reset);
     wire [31:0] data_writeReg;
     wire [31:0] data_readRegA, data_readRegB;
     regfile my_regfile (
-        clock,
+        CLOCK_50,
         ctrl_writeEnable,
         reset,
         ctrl_writeReg,
@@ -59,7 +63,7 @@ module skeleton(clock, reset);
     /** PROCESSOR **/
     processor my_processor(
         // Control signals
-        clock,                          // I: The master clock
+        CLOCK_50,                          // I: The master clock
         reset,                          // I: A reset signal
 
         // Imem

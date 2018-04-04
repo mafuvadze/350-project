@@ -50,7 +50,10 @@
 module processor(
  // Control signals
  clock,                          // I: The master clock
- reset,                          // I: A reset signal
+ reset, 
+
+ // FPGA pins
+ GPIO, // I: A reset signal
 
  // Imem
  address_imem,                   // O: The address of the data to get from imem
@@ -74,6 +77,9 @@ module processor(
 	// Control signals
 	input 			clock,
 						reset;
+						
+	// FPGA pins
+	inout [35:0] 	GPIO;
 
 	// Imem
 	output [11:0] 	address_imem;
@@ -181,7 +187,7 @@ module processor(
 		.neq	(e_neq),
 		.lt	(e_lt),
 		.num0	(e_regB), // rd
-		.num1	(e_regA)	// rs
+		.num1	(e_regA)	 // rs
 	);
 	
 	assign e_branch_taken = (e_blt & e_lt) | (e_bne & e_neq);
@@ -344,5 +350,7 @@ module processor(
 	
 	assign e_regA		= mx_bypassA ? m_data_writeReg : (wx_bypassA ? data_writeReg : dx_readRegA);
 	assign e_regB		= mx_bypassB ? m_data_writeReg : (wx_bypassB ? data_writeReg : dx_readRegB);	
+	
+	// Communication protocol
 	
 endmodule

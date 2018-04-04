@@ -234,9 +234,35 @@ module processor(
 	assign ctrl_writeReg 	= mw_ctrl_writeReg;
 	assign data_writeReg 	= mw_data_writeReg;
 	
-	// Latches
-	always @(negedge clock) begin
-		if (~stall) begin
+	// Latches and clears
+	always @(negedge clock or posedge reset or posedge xm_flush) begin
+		if (xm_flush | reset) begin
+			$display ("xm_flush");
+
+			fd_pc_next  <= 0;
+			fd_IR		   <= 0;
+			dx_regA		<= 0;
+			dx_regB		<= 0;
+			dx_pc_next	<= 0;
+			dx_IR		  	<= 0;
+			dx_readRegA <= 0;
+			dx_readRegB <= 0;
+			
+			if (reset) begin
+				pc				<= 0;
+				xm_flush		<= 0;
+				xm_link		<= 0;
+				xm_pc_next	<= 0;
+				xm_ALUresult<= 0;
+				xm_data_rd	<= 0;
+				xm_IR			<= 0;
+				mw_IR			<= 0;
+				mw_link		<= 0;
+				mw_data_writeReg 		= 0;
+				mw_ctrl_writeReg 		= 0;
+				mw_ctrl_writeEnable 	= 0;
+			end
+		end else if (~stall) begin
 			// FD latches
 			pc 			<= {20'b0, address_imem};
 			fd_pc_next  <= pc + 1;
@@ -249,14 +275,6 @@ module processor(
 			dx_IR		  	<= fd_IR;
 			dx_readRegA <= data_readRegA;
 			dx_readRegB <= data_readRegB;
-		
-			// XM latches
-			xm_link			<= dx_pc_next;
-			xm_IR				<= dx_IR;
-			xm_data_rd		<= e_regB;
-			xm_flush			<= e_flush;
-			xm_pc_next		<= e_pc_next;
-			xm_ALUresult	<= e_ALUresult;
 		end else begin
 			// FD latches
 			fd_pc_next  <= 0;
@@ -269,15 +287,15 @@ module processor(
 			dx_IR		  	<= 0;
 			dx_readRegA <= 0;
 			dx_readRegB <= 0;
-		
-			// XM latches
-			xm_link			<= 0;
-			xm_data_rd		<= 0;
-			xm_IR				<= 0;
-			xm_flush			<= 0;
-			xm_pc_next		<= 0;
-			xm_ALUresult	<= 0;
 		end
+		
+		// XM latches
+		xm_link			<= dx_pc_next;
+		xm_IR				<= dx_IR;
+		xm_data_rd		<= e_regB;
+		xm_flush			<= e_flush;
+		xm_pc_next		<= e_pc_next;
+		xm_ALUresult	<= e_ALUresult;
 	
 		// MW latches
 		mw_data_writeReg 		<= m_data_writeReg;
@@ -309,35 +327,6 @@ module processor(
 		mw_data_writeReg 		= 0;
 		mw_ctrl_writeReg 		= 0;
 		mw_ctrl_writeEnable 	= 0;
-	end
-	
-	// Flush and reset
-		always @(xm_flush or reset) begin
-		if (xm_flush | reset) begin
-			fd_pc_next  <= 0;
-			fd_IR		   <= 0;
-			dx_regA		<= 0;
-			dx_regB		<= 0;
-			dx_pc_next	<= 0;
-			dx_IR		  	<= 0;
-			dx_readRegA <= 0;
-			dx_readRegB <= 0;
-		end
-		
-		if (reset) begin
-			pc				<= 0;
-			xm_flush		<= 0;
-			xm_link		<= 0;
-			xm_pc_next	<= 0;
-			xm_ALUresult<= 0;
-			xm_data_rd	<= 0;
-			xm_IR			<= 0;
-			mw_IR			<= 0;
-			mw_link		<= 0;
-			mw_data_writeReg 		= 0;
-			mw_ctrl_writeReg 		= 0;
-			mw_ctrl_writeEnable 	= 0;
-		end
 	end
 	
 	// Bypass/Stall

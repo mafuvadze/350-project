@@ -5,16 +5,16 @@ module gpio_protocol (GPIO, CLOCK_50, clock);
 	
 	reg 				fpga_state; // Leader or Follower
 	
-	wire 				LEADER, FOLLOWER;
-	
+	wire 				LEADER,
+						FOLLOWER;
+							
 	assign LEADER 	 = 0;
 	assign FOLLOWER = 1;
 	
 	initial begin
-		if (GPIO[30]) begin
-			fpga_state = FOLLOWER;
-		end else begin
-			fpga_state = LEADER;
-		end
+		if (GPIO[30]) fpga_state = FOLLOWER;
+		else fpga_state = LEADER;
 	end
+	
+	assign GPIO[30] = fpga_state ? 1'bz : 1'b1; 
 endmodule

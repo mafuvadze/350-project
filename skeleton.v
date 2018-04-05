@@ -9,12 +9,38 @@
  * inspect which signals the processor tries to assert when.
  */
 
-module skeleton(CLOCK_50, GPIO);
+module skeleton(CLOCK_50, GPIO, LEDR);
     input 			CLOCK_50;
+	 output [3:0]	LEDR;
 	 inout [35:0]	GPIO;
 
-	 wire 			reset;
+	 wire 			clock, reset;
 	 assign 			reset = 0;
+	 
+	// Clock divider 
+	reg [24:0] counter;
+	reg clkout;
+	
+	initial begin
+		 counter = 0;
+		 clkout  = 0;
+	end
+	always @(posedge CLOCK_50) begin
+		 if (counter == 0) begin
+			  counter <= 24999999;
+			  clkout <= ~clkout;
+		 end else begin
+			  counter <= counter - 1;
+		 end
+	end
+	
+	gpio_protocol (
+		GPIO,
+		clkout,
+		1'b1
+	);
+	
+	assign LEDR[3:0] = GPIO[3:0];
 	 
     /** IMEM **/
     // Figure out how to generate a Quartus syncram component and commit the generated verilog file.
@@ -23,7 +49,7 @@ module skeleton(CLOCK_50, GPIO);
     wire [31:0] q_imem;
     imem my_imem(
         .address    (address_imem),            // address of data
-        .clock      (~CLOCK_50),                  // you may need to invert the clock
+        .clock      (~clock),                  // you may need to invert the clock
         .q          (q_imem)                   // the raw instruction
     );
 
@@ -36,7 +62,7 @@ module skeleton(CLOCK_50, GPIO);
     wire [31:0] q_dmem;
     dmem my_dmem(
         .address    (address_dmem),       	  // address of data
-        .clock      (~CLOCK_50),                  // may need to invert the clock
+        .clock      (~clock),                  // may need to invert the clock
         .data	     (data),    					  // data you want to write
         .wren	     (wren),      				  // write enable
         .q          (q_dmem)    					  // data from dmem
@@ -49,7 +75,7 @@ module skeleton(CLOCK_50, GPIO);
     wire [31:0] data_writeReg;
     wire [31:0] data_readRegA, data_readRegB;
     regfile my_regfile (
-        CLOCK_50,
+        clock,
         ctrl_writeEnable,
         reset,
         ctrl_writeReg,
@@ -63,7 +89,7 @@ module skeleton(CLOCK_50, GPIO);
     /** PROCESSOR **/
     processor my_processor(
         // Control signals
-        CLOCK_50,                          // I: The master clock
+        clock,                          // I: The master clock
         reset,                          // I: A reset signal
 
         // Imem

@@ -11,11 +11,16 @@
 
 module skeleton(CLOCK_50, GPIO, LEDR, SW);
     input 			CLOCK_50;
-	 input [17:0]	SW;
-	 output [5:0]	LEDR;
+	 input [1:0]	SW;
+	 output [17:0]	LEDR;
 	 inout [35:0]	GPIO;
 
-	 wire 			clock, reset, fgpa_state;
+	 wire 			clock,
+						reset,
+						fgpa_state,
+						write_done;
+	 
+	 reg				data_ready;
 	 
 	 assign 			reset = 0;
 	 assign			fpga_state = SW[0];
@@ -26,15 +31,30 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
 		.out_clock 	(clock)
 	);
 	
-	gpio_protocol (
-		.GPIO		(GPIO),
-		.clock	(clock),
-		.data_rdy(1'b1),
-		.state	(fpga_state)
+	initial begin
+		data_ready = 1;
+	end
+	
+	always @(posedge clock) begin
+		if (data_ready & write_done) data_ready = 0;
+	end
+	
+	gpio_protocol comm (
+		.GPIO			(GPIO),
+		.clock		(clock),
+		.data_ready	(data_ready),
+		.done			(write_done),
+		.state		(fpga_state),
+		.message_in	(),
+		.message_out({32'b101010110, 32'd3145, 32'd29455, 32'd939415})
 	);
 	
-	assign LEDR[4] = GPIO[32];
-	assign LEDR[3:0] = GPIO[3:0];
+	assign LEDR[2] = data_ready;
+	assign LEDR[1]	= write_done;
+	assign LEDR[0] = GPIO[32];
+	assign LEDR[17:3] = GPIO[17:0];
+
+
 	 
     /** IMEM **/
     // Figure out how to generate a Quartus syncram component and commit the generated verilog file.
@@ -85,7 +105,7 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
         // Control signals
         clock,                          // I: The master clock
         reset,                          // I: A reset signal
-
+		  
         // Imem
         address_imem,                   // O: The address of the data to get from imem
         q_imem,                         // I: The data from imem

@@ -50,10 +50,7 @@
 module processor(
  // Control signals
  clock,                          // I: The master clock
- reset, 
-
- // FPGA pins
- GPIO, // I: A reset signal
+ reset, 									// I: A reset signal
 
  // Imem
  address_imem,                   // O: The address of the data to get from imem
@@ -77,9 +74,6 @@ module processor(
 	// Control signals
 	input 			clock,
 						reset;
-						
-	// FPGA pins
-	inout [35:0] 	GPIO;
 
 	// Imem
 	output [11:0] 	address_imem;

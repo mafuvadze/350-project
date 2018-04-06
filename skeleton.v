@@ -9,37 +9,31 @@
  * inspect which signals the processor tries to assert when.
  */
 
-module skeleton(CLOCK_50, GPIO, LEDR);
+module skeleton(CLOCK_50, GPIO, LEDR, SW);
     input 			CLOCK_50;
-	 output [3:0]	LEDR;
+	 input [17:0]	SW;
+	 output [5:0]	LEDR;
 	 inout [35:0]	GPIO;
 
-	 wire 			clock, reset;
-	 assign 			reset = 0;
+	 wire 			clock, reset, fgpa_state;
 	 
-	// Clock divider 
-	reg [24:0] counter;
-	reg clkout;
-	
-	initial begin
-		 counter = 0;
-		 clkout  = 0;
-	end
-	always @(posedge CLOCK_50) begin
-		 if (counter == 0) begin
-			  counter <= 24999999;
-			  clkout <= ~clkout;
-		 end else begin
-			  counter <= counter - 1;
-		 end
-	end
-	
-	gpio_protocol (
-		GPIO,
-		clkout,
-		1'b1
+	 assign 			reset = 0;
+	 assign			fpga_state = SW[0];
+	 
+	// GPIO protocol
+	clock_divider_50mhz_1hz clk_divider (
+		.in_clock	(CLOCK_50),
+		.out_clock 	(clock)
 	);
 	
+	gpio_protocol (
+		.GPIO		(GPIO),
+		.clock	(clock),
+		.data_rdy(1'b1),
+		.state	(fpga_state)
+	);
+	
+	assign LEDR[4] = GPIO[32];
 	assign LEDR[3:0] = GPIO[3:0];
 	 
     /** IMEM **/

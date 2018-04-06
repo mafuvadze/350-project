@@ -1,62 +1,55 @@
-module gpio_protocol (GPIO, CLOCK_50, data_rdy);
+module gpio_protocol (GPIO, clock, data_rdy, state);
 	/*
-	[3:0] 	MESSAGE_DATA
-	[4]		SHARED_CLOCK	
-	[5]		MESSAGE_DONE
+	
+	[31:0] 	MESSAGE_DATA
+	[32]		SHARED_CLOCK	
+	[33]		MESSAGE_DONE
+	[34]		State=0 READY
+	[35]		State=1 READY
 	
 	*/
 	
-	input 			CLOCK_50,
-						data_rdy;
-	inout [35:0]	GPIO;
+	input 				clock,
+							data_rdy;
+ 			
+	inout [35:0]		GPIO;
 	
-	reg [3:0]		comm [31:0]; // Communication register
-	reg [4:0]		counter;
+	input					state;
 	
-	always @(posedge CLOCK_50) begin
-		if (counter < 5'd31) begin
+	wire 					shared_clock;
+	
+	reg [31:0]	data_in [3:0];  // Communication output register
+	reg [31:0]	data_out [3:0]; // Communication input register
+	reg [2:0]			counter;
+	
+	// State
+	assign GPIO[34] = state ? 1 : 1'bz;
+	
+	// Shared clock
+	assign GPIO[32] = state ? clock : 1'bz;
+	assign shared_clock = GPIO[32];
+	
+	always @(posedge shared_clock) begin
+		if (counter > 3) begin
 			counter = 0;
 		end else if (data_rdy) begin
 			counter = counter + 1;
 		end
+		
+		if (~state)  begin
+			data_in[counter] = GPIO[31:0];
+		end
 	end
-	assign GPIO[5]   = (counter == 0);
-	assign GPIO[3:0] = comm[counter];
+	
+	assign GPIO[31:0] = state ? data_out[counter] : 32'bz;
 	
 	initial begin
 		counter <= 0;
-		comm[0] <= 0;
-		comm[1] <= 1;
-		comm[2] <= 0;
-		comm[3] <= 1;
-		comm[4] <= 0;
-		comm[5] <= 1;
-		comm[6] <= 0;
-		comm[7] <= 1;
-		comm[8] <= 0;
-		comm[9] <= 1;
-		comm[10] <= 0;
-		comm[11] <= 1;
-		comm[12] <= 0;
-		comm[13] <= 1;
-		comm[14] <= 0;
-		comm[15] <= 1;
-		comm[16] <= 0;
-		comm[17] <= 1;
-		comm[18] <= 0;
-		comm[19] <= 1;
-		comm[20] <= 0;
-		comm[21] <= 1;
-		comm[22] <= 0;
-		comm[23] <= 1;
-		comm[24] <= 0;
-		comm[25] <= 1;
-		comm[26] <= 0;
-		comm[27] <= 1;
-		comm[28] <= 0;
-		comm[29] <= 1;
-		comm[30] <= 0;
-		comm[31] <= 1;
+		
+		data_out[0] <= 10;
+		data_out[1] <= 6;
+		data_out[2] <= 10;
+		data_out[3] <= 6;
 	end
 	
 endmodule

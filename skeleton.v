@@ -18,12 +18,14 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
 	 wire 			clock,
 						reset,
 						fgpa_state,
-						write_done;
-	 
-	 reg				data_ready;
-	 
+						write_done,
+						data_pending;
+						
+	reg				data_ready;
+	 	 
 	 assign 			reset = 0;
 	 assign			fpga_state = SW[0];
+	 assign 			data_pending = SW[1];
 	 
 	// GPIO protocol
 	clock_divider_50mhz_1hz clk_divider (
@@ -32,11 +34,12 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
 	);
 	
 	initial begin
-		data_ready = 1;
+		data_ready = 0;
 	end
 	
-	always @(posedge clock) begin
-		if (data_ready & write_done) data_ready = 0;
+	always @(posedge data_pending or posedge write_done) begin
+		if (write_done) data_ready = 0;
+		else data_ready = 1;
 	end
 	
 	gpio_protocol comm (
@@ -49,7 +52,7 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
 		.message_out({32'b101010110, 32'd3145, 32'd29455, 32'd939415})
 	);
 	
-	assign LEDR[2] = data_ready;
+	assign LEDR[2] = fpga_state ? GPIO[35] : GPIO[34];
 	assign LEDR[1]	= write_done;
 	assign LEDR[0] = GPIO[32];
 	assign LEDR[17:3] = GPIO[17:0];

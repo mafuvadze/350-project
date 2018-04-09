@@ -21,7 +21,8 @@ module gpio_protocol (GPIO, clock, data_ready, state, done, message_out, message
 		
 	wire 					shared_clock,
 							reading,
-							writting;
+							writting,
+							other_data_ready;
 							
 	wire [31:0]			data_out [3:0];
 	
@@ -31,8 +32,8 @@ module gpio_protocol (GPIO, clock, data_ready, state, done, message_out, message
 	
 	// State
 	assign reading  = (state & GPIO[34]) | (~state & GPIO[35]);
-	assign writting = (state & GPIO[35])
-		| ((state & GPIO[35]) ^ (~state & GPIO[34]));
+	assign writting = (state & data_ready)
+		| (~state & data_ready & ~other_data_ready); 		// Leader FPGA gets priority
 	
 	// Shared clock
 	assign GPIO[32] = state ? clock : 1'bz;
@@ -41,6 +42,7 @@ module gpio_protocol (GPIO, clock, data_ready, state, done, message_out, message
 	// Ready signals
 	assign GPIO[34] = state ? 1'bz : data_ready;
 	assign GPIO[35] = state ? data_ready : 1'bz;
+	assign other_data_ready = state ? GPIO[34] : GPIO[35];
 	assign done = done_reg;
 	
 	// Message
@@ -51,16 +53,16 @@ module gpio_protocol (GPIO, clock, data_ready, state, done, message_out, message
 	
 	assign message_in	 = {data_in[3], data_in[2], data_in[1], data_in[0]};
 	
-	always @(posedge shared_clock) begin
-		if (counter > 3) begin
-			counter 	= 0;
-			done_reg = writting;
-		end else if (data_ready) begin
-			counter = counter + 1;
+	always @(posedge clock) begin
+		if (done_reg | (~other_data_ready & ~data_ready)) begin
+			counter = 0;
 			done_reg = 0;
-		end else begin
+		end else if (counter > 3) begin
 			counter 	= 0;
 			done_reg = writting;
+		end else begin
+			counter 	= counter + 1;
+			done_reg = 0;
 		end
 		
 		if (reading) data_in[counter] = GPIO[31:0];

@@ -9,29 +9,67 @@
  * inspect which signals the processor tries to assert when.
  */
 
-module skeleton(CLOCK_50, GPIO, LEDR, SW);
+module skeleton(
+	CLOCK_50,
+	GPIO,
+	LEDR,
+	SW,
+	PS2_CLK,
+	PS2_DATA,
+	LCD_DATA,
+	LCD_RW,
+	LCD_EN,
+	LCD_RS,
+	LCD_ON,
+	LCD_BLON,
+	HEX0,
+	HEX1,
+	KEY
+);
     input 			CLOCK_50;
 	 input [1:0]	SW;
+	 input [3:0]	KEY;
+	 
+	 
 	 output [17:0]	LEDR;
+	 output [7:0]	LCD_DATA;
+	 output [6:0]	HEX0,
+						HEX1;
+	 output 			LCD_RW,
+						LCD_EN,
+						LCD_RS,
+						LCD_ON,
+						LCD_BLON;
+	 
 	 inout [35:0]	GPIO;
+	 inout			PS2_DATA,
+						PS2_CLK;
 
 	 wire 			clock,
+						RESETN,
 						reset,
 						fgpa_state,
 						write_done,
-						data_pending;
-						
-	reg				data_ready;
+						data_pending,
+						ps2_key_pressed;
+	 wire [7:0]	 	ps2_key_data,
+						ps2_out,
+						ps2_to_lcd;	
+												
+	 reg				data_ready;
+	 reg [7:0] 		ps2_data_ascii;
 	 	 
 	 assign 			reset = 0;
 	 assign			fpga_state = SW[0];
 	 assign 			data_pending = SW[1];
 	 
+	 assign 			RESETN = KEY[0];
+	 
 	// GPIO protocol
-	clock_divider_50mhz_1hz clk_divider (
-		.in_clock	(CLOCK_50),
-		.out_clock 	(clock)
-	);
+//	clock_divider_50mhz_1hz clk_divider (
+//		.in_clock	(CLOCK_50),
+//		.out_clock 	(clock)
+//	);
 	
 	initial begin
 		data_ready = 0;
@@ -44,7 +82,7 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
 	
 	gpio_protocol comm (
 		.GPIO			(GPIO),
-		.clock		(clock),
+		.clock		(CLOCK_50),
 		.data_ready	(data_ready),
 		.done			(write_done),
 		.state		(fpga_state),
@@ -58,7 +96,76 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
 	assign LEDR[17:3] = GPIO[17:0];
 
 
-	 
+	// PS2
+	PS2_Interface myps2 (
+		CLOCK_50,
+		RESETN,
+		PS2_CLK,
+		PS2_DATA,
+		ps2_key_data,
+		ps2_key_pressed,
+		ps2_out
+	);
+	
+	always @* begin
+		case(ps2_out)
+			8'h1C: ps2_data_ascii <= 8'd97;  // a
+			8'h32: ps2_data_ascii <= 8'd98;  // b 
+			8'h21: ps2_data_ascii <= 8'd99;  // c
+			8'h23: ps2_data_ascii <= 8'd100; // d
+			8'h24: ps2_data_ascii <= 8'd101; // e
+			8'h2B: ps2_data_ascii <= 8'd102; // f 
+			8'h34: ps2_data_ascii <= 8'd103; // g
+			8'h33: ps2_data_ascii <= 8'd104; // h
+			8'h43: ps2_data_ascii <= 8'd105; // i
+			8'h3B: ps2_data_ascii <= 8'd106; // j 
+			8'h42: ps2_data_ascii <= 8'd107; // k
+			8'h4B: ps2_data_ascii <= 8'd108; // l
+			8'h3A: ps2_data_ascii <= 8'd109; // m
+			8'h31: ps2_data_ascii <= 8'd110; // n
+			8'h44: ps2_data_ascii <= 8'd111; // o
+			8'h4D: ps2_data_ascii <= 8'd112; // p
+			8'h15: ps2_data_ascii <= 8'd113; // q
+			8'h2D: ps2_data_ascii <= 8'd114; // r
+			8'h1B: ps2_data_ascii <= 8'd115; // s
+			8'h2C: ps2_data_ascii <= 8'd116; // t
+			8'h3C: ps2_data_ascii <= 8'd117; // u
+			8'h2A: ps2_data_ascii <= 8'd118; // v
+			8'h1D: ps2_data_ascii <= 8'd119; // w
+			8'h22: ps2_data_ascii <= 8'd120; // x
+			8'h35: ps2_data_ascii <= 8'd121; // y
+			8'h1A: ps2_data_ascii <= 8'd122; // z
+			8'h29: ps2_data_ascii <= 8'd32;  // space 
+			8'h66: ps2_data_ascii <= 8'd127; // del
+			default: ps2_data_ascii <= 8'd32;// default to space	
+		endcase 
+	end
+
+	assign ps2_to_lcd = ps2_data_ascii; 
+	
+	lcd mylcd (
+		CLOCK_50,
+		~RESETN,
+		1'b1,
+		ps2_to_lcd,
+		LCD_DATA,
+		LCD_RW,
+		LCD_EN,
+		LCD_RS,
+		LCD_ON,
+		LCD_BLON
+	);
+	
+	Hexadecimal_To_Seven_Segment hex1 (
+		ps2_out[3:0],
+		HEX0
+	);
+	
+	Hexadecimal_To_Seven_Segment hex2 (
+		ps2_out[7:4],
+		HEX1
+	);
+	
     /** IMEM **/
     // Figure out how to generate a Quartus syncram component and commit the generated verilog file.
     // Make sure you configure it correctly!

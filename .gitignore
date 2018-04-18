@@ -2,7 +2,11 @@
 !.gitignore
 !*.v
 !*.tex
+<<<<<<< HEAD
 !*.csv
 !*.qpf
 !*.qsf
 !*.mif
+=======
+!*.sv
+>>>>>>> dcd212e... Allow sv files to repo

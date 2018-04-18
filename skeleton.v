@@ -21,7 +21,9 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
 						write_done,
 						data_pending;
 						
-	reg				data_ready;
+	 reg				data_ready;
+	 reg [127:0]	message_in,
+						message_out;
 	 	 
 	 assign 			reset = 0;
 	 assign			fpga_state = SW[0];
@@ -35,6 +37,8 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
 	
 	initial begin
 		data_ready = 0;
+		message_in = 0;
+		message_Out = 0;
 	end
 	
 	always @(posedge data_pending or posedge write_done) begin
@@ -48,8 +52,8 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
 		.data_ready	(data_ready),
 		.done			(write_done),
 		.state		(fpga_state),
-		.message_in	(),
-		.message_out({32'b101010110, 32'd3145, 32'd29455, 32'd939415})
+		.message_in	(message_in),
+		.message_out(message_out)
 	);
 	
 	assign LEDR[2] = fpga_state ? GPIO[35] : GPIO[34];

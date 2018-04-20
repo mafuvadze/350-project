@@ -146,7 +146,6 @@ module skeleton(
 		endcase 
 	end
 
-	assign ps2_to_lcd = ps2_data_ascii; 
 	
 	lcd mylcd (
 		CLOCK_50,

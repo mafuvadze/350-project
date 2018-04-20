@@ -177,9 +177,9 @@ module skeleton(
 			8'h1A: ps2_data_ascii <= 8'd122; // z
 			8'h29: ps2_data_ascii <= 8'd32;  // space 
 			8'h66: ps2_data_ascii <= 8'd127; // del
+			default: ps2_data_ascii <= 8'd0; 
 		endcase 
 	end
-
 	
 	lcd mylcd (
 		CLOCK_50,
@@ -203,6 +203,7 @@ module skeleton(
 		ps2_out[7:4],
 		HEX1
 	);
+	
 	
     /** IMEM **/
     // Figure out how to generate a Quartus syncram component and commit the generated verilog file.

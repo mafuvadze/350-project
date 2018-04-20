@@ -56,12 +56,14 @@ module skeleton(
 	 wire [7:0]	 	ps2_key_data,
 						ps2_out,
 						ps2_to_lcd;	
-	 wire [127:0]	message_in_wire;
+	 wire [127:0]	message_in_wire,
+						message_out;
 												
 	 reg				data_ready;
+	 reg [4:0]		message_out_counter;
 	 reg [7:0] 		ps2_data_ascii;
-	 reg [127:0]	message_in,
-						message_out;
+	 reg [7:0]		message_out_seg [15:0];
+	 reg [127:0]	message_in;
 	 	 
 	 assign 			reset = 0;
 	 assign			fpga_state = SW[0];
@@ -76,14 +78,27 @@ module skeleton(
 	);
 	
 	initial begin
+		message_out_counter = 0;
 		data_ready = 0;
 		message_in = 0;
-		message_out= 0;
 	end
 	
 	always @(posedge data_pending or posedge write_done) begin
 		if (write_done) data_ready = 0;
 		else data_ready = 1;
+	end
+	
+	always @(posedge RESETN or posedge ps2_key_pressed) begin
+		if (RESETN) begin
+			message_out_counter = 0;
+		end else begin
+			message_out_seg[message_out_counter] = ps2_key_data;
+			if (message_out_counter >= 15) begin
+				message_out_counter = 0;
+			end else begin
+				message_out_counter = message_out_counter + 1;
+			end
+		end
 	end
 	
 	gpio_protocol comm (
@@ -95,6 +110,25 @@ module skeleton(
 		.message_in	(message_in_wire),
 		.message_out(message_out)
 	);
+	
+	assign message_out = {
+		message_out_seg[0],
+		message_out_seg[1],
+		message_out_seg[2],
+		message_out_seg[3],
+		message_out_seg[4],
+		message_out_seg[5],
+		message_out_seg[6],
+		message_out_seg[7],
+		message_out_seg[8],
+		message_out_seg[9],
+		message_out_seg[10],
+		message_out_seg[11],
+		message_out_seg[12],
+		message_out_seg[13],
+		message_out_seg[14],
+		message_out_seg[15]
+	};
 	
 	assign LEDR[2] = fpga_state ? GPIO[35] : GPIO[34];
 	assign LEDR[1]	= write_done;

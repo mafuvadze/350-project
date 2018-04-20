@@ -10,9 +10,8 @@ module vh_sync (
     output reg [3:0] blue
     );
 	
-/*
-* These are the parameters for a 640x480 px display (60Hz refresh rate)
-*/
+/* These are the parameters for a 640x480 px display (60Hz refresh rate)*/
+
 parameter hpixels = 800;
 parameter vlines = 521;
 parameter hpulse = 96;

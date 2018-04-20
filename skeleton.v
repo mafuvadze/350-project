@@ -51,15 +51,16 @@ module skeleton(
 						fgpa_state,
 						write_done,
 						data_pending,
-						clock_1hz; 
+						clock_1hz,
 						ps2_key_pressed;
 	 wire [7:0]	 	ps2_key_data,
 						ps2_out,
 						ps2_to_lcd;	
+	 wire [127:0]	message_in_wire;
 												
 	 reg				data_ready;
 	 reg [7:0] 		ps2_data_ascii;
-	 reg [127:0]	message_in
+	 reg [127:0]	message_in,
 						message_out;
 	 	 
 	 assign 			reset = 0;
@@ -91,7 +92,7 @@ module skeleton(
 		.data_ready	(data_ready),
 		.done			(write_done),
 		.state		(fpga_state),
-		.message_in	(message_in),
+		.message_in	(message_in_wire),
 		.message_out(message_out)
 	);
 	

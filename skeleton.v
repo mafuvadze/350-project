@@ -9,14 +9,32 @@
  * inspect which signals the processor tries to assert when.
  */
 
-module skeleton(CLOCK_50, GPIO, LEDR, SW);
+module skeleton(CLOCK_50, GPIO, LEDR, SW, 	
+	VGA_CLK,   														//	VGA Clock
+	VGA_HS,															//	VGA H_SYNC
+	VGA_VS,															//	VGA V_SYNC
+	VGA_BLANK,														//	VGA BLANK
+	VGA_SYNC,														//	VGA SYNC
+	VGA_R,   														//	VGA Red[9:0]
+	VGA_G,	 														//	VGA Green[9:0]
+	VGA_B												//	VGA Blue[9:0]
+);
     input 			CLOCK_50;
 	 input [1:0]	SW;
 	 output [17:0]	LEDR;
 	 inout [35:0]	GPIO;
 
      
-     
+     	////////////////////////	VGA	////////////////////////////
+	 output			VGA_CLK;   				//	VGA Clock
+	 output			VGA_HS;					//	VGA H_SYNC
+	 output			VGA_VS;					//	VGA V_SYNC
+	 output			VGA_BLANK;				//	VGA BLANK
+	 output			VGA_SYNC;				//	VGA SYNC
+	 output	[7:0]	VGA_R;   				//	VGA Red[9:0]
+	 output	[7:0]	VGA_G;	 				//	VGA Green[9:0]
+	 output	[7:0]	VGA_B;   				//	VGA Blue[9:0]
+
      
      
 	 wire 			clock,
@@ -134,17 +152,17 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
     );
     
     
-         	////////////////////////	VGA	////////////////////////////
-	output			VGA_CLK;   				//	VGA Clock
-	output			VGA_HS;					//	VGA H_SYNC
-	output			VGA_VS;					//	VGA V_SYNC
-	output			VGA_BLANK;				//	VGA BLANK
-	output			VGA_SYNC;				//	VGA SYNC
-	output	[7:0]	VGA_R;   				//	VGA Red[9:0]
-	output	[7:0]	VGA_G;	 				//	VGA Green[9:0]
-	output	[7:0]	VGA_B;   				//	VGA Blue[9:0]
-	input				CLOCK_50;
-    
-    vga_controller vga_ctrl();
+
+    Reset_Delay			r0	(.iCLK(CLOCK_50),.oRESET(DLY_RST)	);
+	 VGA_Audio_PLL 		p1	(.areset(~DLY_RST),.inclk0(CLOCK_50),.c0(VGA_CTRL_CLK),.c1(AUD_CTRL_CLK),.c2(VGA_CLK)	);
+    vga_controller3 vga_ctrl(.iRST_n(DLY_RST),
+								 .iVGA_CLK(VGA_CLK),
+								 .oBLANK_n(VGA_BLANK),
+								 .oHS(VGA_HS),
+								 .oVS(VGA_VS),
+								 .b_data(VGA_B),
+								 .g_data(VGA_G),
+								 .r_data(VGA_R));
+	
 
 endmodule

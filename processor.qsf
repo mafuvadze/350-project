@@ -69,30 +69,9 @@ set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME regfile_tb -section_id re
 set_global_assignment -name EDA_TEST_BENCH_NAME register_tb -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id register_tb
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME register_tb -section_id register_tb
-set_global_assignment -name VERILOG_FILE dmem.v
-set_global_assignment -name VERILOG_FILE imem.v
-set_global_assignment -name SOURCE_FILE processor.qsf
-set_global_assignment -name VERILOG_FILE comp_32.v
-set_global_assignment -name VERILOG_FILE alu.v
-set_global_assignment -name VERILOG_FILE regfile.v
-set_global_assignment -name VERILOG_FILE mux_32.v
-set_global_assignment -name VERILOG_FILE mux_4.v
-set_global_assignment -name VERILOG_FILE mux_2.v
-set_global_assignment -name VERILOG_FILE imem_bb.v
-set_global_assignment -name VERILOG_FILE dmem_bb.v
-set_global_assignment -name VERILOG_FILE decoder_5_32.v
-set_global_assignment -name VERILOG_FILE decoder_3_8.v
-set_global_assignment -name VERILOG_FILE decoder_2_4.v
-set_global_assignment -name VERILOG_FILE skeleton.v
-set_global_assignment -name VERILOG_FILE processor.v
-set_global_assignment -name MIF_FILE dmem.mif
-set_global_assignment -name MIF_FILE imem.mif
-set_global_assignment -name VERILOG_FILE op_decoder.v
-set_global_assignment -name VERILOG_FILE processor_tb.v
 set_global_assignment -name EDA_TEST_BENCH_NAME alu_tb -section_id eda_simulation
 set_global_assignment -name EDA_DESIGN_INSTANCE_NAME NA -section_id alu_tb
 set_global_assignment -name EDA_TEST_BENCH_MODULE_NAME alu_tb -section_id alu_tb
-set_global_assignment -name VERILOG_FILE register.v
 set_location_assignment PIN_D2 -to AUD_ADCDAT
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUD_ADCDAT
 set_location_assignment PIN_C2 -to AUD_ADCLRCK
@@ -1321,6 +1300,39 @@ set_global_assignment -name EDA_TEST_BENCH_FILE alu_tb.v -section_id alu_tb
 set_global_assignment -name EDA_TEST_BENCH_FILE mux_2.v -section_id alu_tb
 set_global_assignment -name EDA_TEST_BENCH_FILE mux_4.v -section_id alu_tb
 set_global_assignment -name EDA_TEST_BENCH_FILE mux_32.v -section_id alu_tb
+set_global_assignment -name VERILOG_FILE vh_sync.v
+set_global_assignment -name VERILOG_FILE vga_data.v
+set_global_assignment -name VERILOG_FILE vga_controller.v
+set_global_assignment -name VERILOG_FILE PS2_Interface.v
+set_global_assignment -name VERILOG_FILE PS2_Controller.v
+set_global_assignment -name VERILOG_FILE img_index.v
+set_global_assignment -name VERILOG_FILE img_data.v
+set_global_assignment -name VERILOG_FILE hsync_generator.v
+set_global_assignment -name VERILOG_FILE Hexadecimal_To_Seven_Segment.v
+set_global_assignment -name VERILOG_FILE Altera_UP_PS2_Data_In.v
+set_global_assignment -name VERILOG_FILE Altera_UP_PS2_Command_Out.v
+set_global_assignment -name SYSTEMVERILOG_FILE lcd.sv
+set_global_assignment -name VERILOG_FILE dmem.v
+set_global_assignment -name VERILOG_FILE imem.v
+set_global_assignment -name SOURCE_FILE processor.qsf
+set_global_assignment -name VERILOG_FILE comp_32.v
+set_global_assignment -name VERILOG_FILE alu.v
+set_global_assignment -name VERILOG_FILE regfile.v
+set_global_assignment -name VERILOG_FILE mux_32.v
+set_global_assignment -name VERILOG_FILE mux_4.v
+set_global_assignment -name VERILOG_FILE mux_2.v
+set_global_assignment -name VERILOG_FILE imem_bb.v
+set_global_assignment -name VERILOG_FILE dmem_bb.v
+set_global_assignment -name VERILOG_FILE decoder_5_32.v
+set_global_assignment -name VERILOG_FILE decoder_3_8.v
+set_global_assignment -name VERILOG_FILE decoder_2_4.v
+set_global_assignment -name VERILOG_FILE skeleton.v
+set_global_assignment -name VERILOG_FILE processor.v
+set_global_assignment -name MIF_FILE dmem.mif
+set_global_assignment -name MIF_FILE imem.mif
+set_global_assignment -name VERILOG_FILE op_decoder.v
+set_global_assignment -name VERILOG_FILE processor_tb.v
+set_global_assignment -name VERILOG_FILE register.v
 set_global_assignment -name VERILOG_FILE gpio_protocol.v
 set_global_assignment -name VERILOG_FILE clock_divider_50mhz_1hz.v
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

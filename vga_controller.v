@@ -1,4 +1,4 @@
-module vga_controller(
+/*module vga_controller(
     iRST_n,
     iVGA_CLK,
     oBLANK_n,
@@ -156,3 +156,4 @@ wire cBLANK_n,cHS,cVS,rst;
 	parameter [0:255] Z      = 256'h0000FFFEFFFE001E003C007800F001E003C00F001E003C007800F000FFFEFFFE;
 
 endmodule
+*/

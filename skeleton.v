@@ -134,8 +134,8 @@ module skeleton(
 	assign LEDR[1]	= write_done;
 	assign LEDR[0] = GPIO[32];
 	assign LEDR[17:3] = GPIO[17:0];
-
-
+	
+	
 	// PS2
 	PS2_Interface myps2 (
 		CLOCK_50,
@@ -147,7 +147,7 @@ module skeleton(
 		ps2_out
 	);
 	
-	always @(posedge clock_1hz) begin
+	always @(posedge ps2_key_pressed) begin
 		case(ps2_out)
 			8'h1C: ps2_data_ascii <= 8'd97;  // a
 			8'h32: ps2_data_ascii <= 8'd98;  // b 
@@ -185,8 +185,8 @@ module skeleton(
 	lcd mylcd (
 		CLOCK_50,
 		~RESETN,
-		1'b1,
-		ps2_to_lcd,
+		ps2_key_pressed,
+		ps2_data_ascii,
 		LCD_DATA,
 		LCD_RW,
 		LCD_EN,

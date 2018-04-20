@@ -1305,14 +1305,13 @@ set_global_assignment -name VERILOG_FILE vga_data.v
 set_global_assignment -name VERILOG_FILE vga_controller.v
 set_global_assignment -name VERILOG_FILE PS2_Interface.v
 set_global_assignment -name VERILOG_FILE PS2_Controller.v
-set_global_assignment -name SYSTEMVERILOG_FILE lcd.sv
 set_global_assignment -name VERILOG_FILE img_index.v
 set_global_assignment -name VERILOG_FILE img_data.v
-set_global_assignment -name QIP_FILE imem.qip
 set_global_assignment -name VERILOG_FILE hsync_generator.v
 set_global_assignment -name VERILOG_FILE Hexadecimal_To_Seven_Segment.v
 set_global_assignment -name VERILOG_FILE Altera_UP_PS2_Data_In.v
 set_global_assignment -name VERILOG_FILE Altera_UP_PS2_Command_Out.v
+set_global_assignment -name SYSTEMVERILOG_FILE lcd.sv
 set_global_assignment -name VERILOG_FILE dmem.v
 set_global_assignment -name VERILOG_FILE imem.v
 set_global_assignment -name SOURCE_FILE processor.qsf

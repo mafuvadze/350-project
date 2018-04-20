@@ -15,6 +15,10 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
 	 output [17:0]	LEDR;
 	 inout [35:0]	GPIO;
 
+     
+     
+     
+     
 	 wire 			clock,
 						reset,
 						fgpa_state,
@@ -128,5 +132,19 @@ module skeleton(CLOCK_50, GPIO, LEDR, SW);
         data_readRegA,                  // I: Data from port A of regfile
         data_readRegB                   // I: Data from port B of regfile
     );
+    
+    
+         	////////////////////////	VGA	////////////////////////////
+	output			VGA_CLK;   				//	VGA Clock
+	output			VGA_HS;					//	VGA H_SYNC
+	output			VGA_VS;					//	VGA V_SYNC
+	output			VGA_BLANK;				//	VGA BLANK
+	output			VGA_SYNC;				//	VGA SYNC
+	output	[7:0]	VGA_R;   				//	VGA Red[9:0]
+	output	[7:0]	VGA_G;	 				//	VGA Green[9:0]
+	output	[7:0]	VGA_B;   				//	VGA Blue[9:0]
+	input				CLOCK_50;
+    
+    vga_controller vga_ctrl();
 
 endmodule

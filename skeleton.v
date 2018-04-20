@@ -92,7 +92,7 @@ module skeleton(
 		if (RESETN) begin
 			message_out_counter = 0;
 		end else begin
-			message_out_seg[message_out_counter] = ps2_key_data;
+			message_out_seg[message_out_counter] = ps2_data_ascii;
 			if (message_out_counter >= 15) begin
 				message_out_counter = 0;
 			end else begin
@@ -147,7 +147,7 @@ module skeleton(
 		ps2_out
 	);
 	
-	always @(posedge clock_1hz) begin
+	always @(posedge ps2_key_pressed) begin
 		case(ps2_out)
 			8'h1C: ps2_data_ascii <= 8'd97;  // a
 			8'h32: ps2_data_ascii <= 8'd98;  // b 
@@ -184,8 +184,8 @@ module skeleton(
 	lcd mylcd (
 		CLOCK_50,
 		~RESETN,
-		1'b1,
-		ps2_to_lcd,
+		ps2_key_pressed,
+		ps2_data_ascii,
 		LCD_DATA,
 		LCD_RW,
 		LCD_EN,

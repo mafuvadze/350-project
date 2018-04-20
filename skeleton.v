@@ -15,7 +15,7 @@ module skeleton(
 	LEDR,
 	SW,
 	PS2_CLK,
-	PS2_DATA,
+	PS2_DAT,
 	LCD_DATA,
 	LCD_RW,
 	LCD_EN,
@@ -42,7 +42,7 @@ module skeleton(
 						LCD_BLON;
 	 
 	 inout [35:0]	GPIO;
-	 inout			PS2_DATA,
+	 inout			PS2_DAT,
 						PS2_CLK;
 
 	 wire 			clock,
@@ -51,6 +51,7 @@ module skeleton(
 						fgpa_state,
 						write_done,
 						data_pending,
+						clock_1hz; 
 						ps2_key_pressed;
 	 wire [7:0]	 	ps2_key_data,
 						ps2_out,
@@ -58,6 +59,8 @@ module skeleton(
 												
 	 reg				data_ready;
 	 reg [7:0] 		ps2_data_ascii;
+	 reg [127:0]	message_in
+						message_out;
 	 	 
 	 assign 			reset = 0;
 	 assign			fpga_state = SW[0];
@@ -66,13 +69,15 @@ module skeleton(
 	 assign 			RESETN = KEY[0];
 	 
 	// GPIO protocol
-//	clock_divider_50mhz_1hz clk_divider (
-//		.in_clock	(CLOCK_50),
-//		.out_clock 	(clock)
-//	);
+	clock_divider_50mhz_1hz clk_divider (
+		.in_clock	(CLOCK_50),
+		.out_clock 	(clock_1hz)
+	);
 	
 	initial begin
 		data_ready = 0;
+		message_in = 0;
+		message_out= 0;
 	end
 	
 	always @(posedge data_pending or posedge write_done) begin
@@ -82,12 +87,12 @@ module skeleton(
 	
 	gpio_protocol comm (
 		.GPIO			(GPIO),
-		.clock		(CLOCK_50),
+		.clock		(clock_1hz),
 		.data_ready	(data_ready),
 		.done			(write_done),
 		.state		(fpga_state),
-		.message_in	(),
-		.message_out({32'b101010110, 32'd3145, 32'd29455, 32'd939415})
+		.message_in	(message_in),
+		.message_out(message_out)
 	);
 	
 	assign LEDR[2] = fpga_state ? GPIO[35] : GPIO[34];
@@ -101,13 +106,13 @@ module skeleton(
 		CLOCK_50,
 		RESETN,
 		PS2_CLK,
-		PS2_DATA,
+		PS2_DAT,
 		ps2_key_data,
 		ps2_key_pressed,
 		ps2_out
 	);
 	
-	always @* begin
+	always @(posedge clock_1hz) begin
 		case(ps2_out)
 			8'h1C: ps2_data_ascii <= 8'd97;  // a
 			8'h32: ps2_data_ascii <= 8'd98;  // b 
@@ -137,7 +142,6 @@ module skeleton(
 			8'h1A: ps2_data_ascii <= 8'd122; // z
 			8'h29: ps2_data_ascii <= 8'd32;  // space 
 			8'h66: ps2_data_ascii <= 8'd127; // del
-			default: ps2_data_ascii <= 8'd32;// default to space	
 		endcase 
 	end
 

@@ -1300,6 +1300,8 @@ set_global_assignment -name EDA_TEST_BENCH_FILE alu_tb.v -section_id alu_tb
 set_global_assignment -name EDA_TEST_BENCH_FILE mux_2.v -section_id alu_tb
 set_global_assignment -name EDA_TEST_BENCH_FILE mux_4.v -section_id alu_tb
 set_global_assignment -name EDA_TEST_BENCH_FILE mux_32.v -section_id alu_tb
+set_global_assignment -name MIF_FILE chat_background_index2.mif
+set_global_assignment -name MIF_FILE chat_background_data2.mif
 set_global_assignment -name MIF_FILE chat_background_formatted_data.mif
 set_global_assignment -name MIF_FILE chat_background_index.mif
 set_global_assignment -name MIF_FILE chat_background_data.mif

@@ -5,11 +5,21 @@ module vga_controller3(iRST_n,
                       oVS,
                       b_data,
                       g_data,
-                      r_data);
+                      r_data,
+							 background_switch_black,
+							 background_switch_white,
+							 background_switch_blue,
+							 background_switch_red,
+							 background_switch_green);
 
 	
 input iRST_n;
 input iVGA_CLK;
+input background_switch_black,
+							 background_switch_white,
+							 background_switch_blue,
+							 background_switch_red,
+							 background_switch_green;
 output reg oBLANK_n;
 output reg oHS;
 output reg oVS;
@@ -52,10 +62,83 @@ img_data	img_data_inst (
 	
 /////////////////////////
 //////Add switch-input logic here
+	reg [18:0] xCor, yCor;
+	reg [15:0] counter;
+
+	wire [15:0] comparator_counter;
+	assign comparator_counter = 16'd0;
+
+	integer squareSize = 128;
+	integer squareSize_sprite1 = 64;
+	integer xSize = 640;
+	integer ySize = 550;
+
+
+initial
+begin
+	counter <= comparator_counter;
+	xCor <= 19'd670; //xSize + squareSize 640 + 256/2 = 640 + 128 = 768 //PREV: 670
+	yCor <= 19'd580; //ySize + squareSize 480 + 128 = 608 //PREV: 580
+end
+
+always@(posedge iVGA_CLK)
+begin
+	counter <= counter + 1'd1;
+end
+
+wire [7:0] indexInput;
+reg [7:0] background_input;
+wire isY, isX;
+wire isPlayer;
+
+wire background_switch;
+assign background_switch = 
+	background_switch_black || 
+	background_switch_white || 
+	background_switch_blue || 
+	background_switch_green || 
+	background_switch_red;
+
+always @(posedge iVGA_CLK)
+begin
+	if (background_switch_black)
+		background_input <= 8'd1;
+	else if (background_switch_white)
+		background_input <= 8'd0;
+	else if (background_switch_blue)
+		background_input <= 8'd0;
+	else if (background_switch_green)
+		background_input <= 8'd0;
+	else if (background_switch_red)
+		background_input <= 8'd0;
+end
+	
+assign indexInput = background_switch ? background_input : index;
+assign isX = xCor >= (ADDR%xSize + xSize - squareSize) && xCor <= (ADDR%xSize + xSize + squareSize);
+assign isY = yCor >= (ADDR/ySize + ySize - squareSize) && yCor <= (ADDR/ySize + ySize + squareSize);
+and isS(isPlayer, isX, isY);
+
+//	wordRom wordRom (
+//		.address(),
+//		.clock(VGA_CLK_n),
+//		.q()
+//	);
+//	characterRom charRom (
+//		.address(),
+//		.clock(VGA_CLK_n),
+//		.q()
+//	);
+
+//always @(posedge iVGA_CLK, negedge iRST_n)
+//begin
+//	if(background_switch)
+//		
+//	else
+//end
 	
 //////Color table output
 img_index	img_index_inst (
-	.address ( index ),
+	.address ( indexInput ),
 	.clock ( iVGA_CLK ),
 	.q ( bgr_data_raw)
 	);	

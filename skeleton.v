@@ -33,12 +33,21 @@ module skeleton(
 	VGA_SYNC,														//	VGA SYNC
 	VGA_R,   														//	VGA Red[9:0]
 	VGA_G,	 														//	VGA Green[9:0]
-	VGA_B												//	VGA Blue[9:0]
+	VGA_B,															//	VGA Blue[9:0]
+   background_switch_black,
+	background_switch_white,
+	background_switch_blue,
+	background_switch_red,
+	background_switch_green	
 );
     input 			CLOCK_50;
 	 input [1:0]	SW;
 	 input [3:0]	KEY;
-	 
+	 input background_switch_black,
+							 background_switch_white,
+							 background_switch_blue,
+							 background_switch_red,
+							 background_switch_green;
 	 
 	 output [17:0]	LEDR;
 	 output [7:0]	LCD_DATA;
@@ -308,7 +317,12 @@ module skeleton(
 								 .oVS(VGA_VS),
 								 .b_data(VGA_B),
 								 .g_data(VGA_G),
-								 .r_data(VGA_R));
+								 .r_data(VGA_R),
+								 .background_switch_black(background_switch_black),
+								 .background_switch_white(background_switch_white),
+								 .background_switch_blue(background_switch_blue),
+								 .background_switch_green(background_switch_green),
+								 .background_switch_red(background_switch_red));
 	
 
 endmodule

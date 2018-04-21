@@ -1302,18 +1302,7 @@ set_global_assignment -name EDA_TEST_BENCH_FILE mux_4.v -section_id alu_tb
 set_global_assignment -name EDA_TEST_BENCH_FILE mux_32.v -section_id alu_tb
 set_global_assignment -name MIF_FILE chat_background_index2.mif
 set_global_assignment -name MIF_FILE chat_background_data2.mif
-set_global_assignment -name MIF_FILE chat_background_formatted_data.mif
-set_global_assignment -name MIF_FILE chat_background_index.mif
-set_global_assignment -name MIF_FILE chat_background_data.mif
-set_global_assignment -name MIF_FILE pause_index.mif
-set_global_assignment -name MIF_FILE pause_data.mif
-set_global_assignment -name MIF_FILE background_index.mif
-set_global_assignment -name MIF_FILE background_data.mif
-set_global_assignment -name MIF_FILE test_index.mif
-set_global_assignment -name MIF_FILE test_data.mif
 set_global_assignment -name VERILOG_FILE hvsync_generator.v
-set_global_assignment -name MIF_FILE chatroom_index.mif
-set_global_assignment -name MIF_FILE chatroom_data.mif
 set_global_assignment -name MIF_FILE lab7_img_index.mif
 set_global_assignment -name MIF_FILE lab7_img_data.mif
 set_global_assignment -name VERILOG_FILE vga_pll.v

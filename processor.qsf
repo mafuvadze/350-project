@@ -1307,15 +1307,21 @@ set_global_assignment -name MIF_FILE lab7_img_index.mif
 set_global_assignment -name MIF_FILE lab7_img_data.mif
 set_global_assignment -name VERILOG_FILE vga_pll.v
 set_global_assignment -name VERILOG_FILE vga_adapter.v
-set_global_assignment -name VERILOG_FILE img_index.v
-set_global_assignment -name VERILOG_FILE img_data.v
 set_global_assignment -name MIF_FILE screenwords.mif
 set_global_assignment -name MIF_FILE chars.mif
 set_global_assignment -name MIF_FILE background.mif
 set_global_assignment -name VERILOG_FILE vh_sync.v
 set_global_assignment -name VERILOG_FILE vga_data.v
-set_global_assignment -name VERILOG_FILE vga_controller.v
 set_global_assignment -name VERILOG_FILE hsync_generator.v
+set_global_assignment -name VERILOG_FILE vga_controller.v
+set_global_assignment -name VERILOG_FILE PS2_Interface.v
+set_global_assignment -name VERILOG_FILE PS2_Controller.v
+set_global_assignment -name VERILOG_FILE img_index.v
+set_global_assignment -name VERILOG_FILE img_data.v
+set_global_assignment -name VERILOG_FILE Hexadecimal_To_Seven_Segment.v
+set_global_assignment -name VERILOG_FILE Altera_UP_PS2_Data_In.v
+set_global_assignment -name VERILOG_FILE Altera_UP_PS2_Command_Out.v
+set_global_assignment -name SYSTEMVERILOG_FILE lcd.sv
 set_global_assignment -name VERILOG_FILE dmem.v
 set_global_assignment -name VERILOG_FILE imem.v
 set_global_assignment -name SOURCE_FILE processor.qsf
@@ -1343,4 +1349,5 @@ set_global_assignment -name VERILOG_FILE video_sync_generator.v
 set_global_assignment -name VERILOG_FILE Reset_Delay.v
 set_global_assignment -name VERILOG_FILE VGA_Audio_PLL.v
 set_global_assignment -name VERILOG_FILE clock_divider_50mhz_1hz.v
+set_global_assignment -name VECTOR_WAVEFORM_FILE output_files/Waveform.vwf
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

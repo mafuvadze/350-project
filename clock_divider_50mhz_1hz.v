@@ -22,3 +22,4 @@ module clock_divider_50mhz_1hz (in_clock, out_clock);
 	assign out_clock = clkout;
 	
 endmodule
+

@@ -1,0 +1,24 @@
+WIDTH=24;
+DEPTH=16;
+
+ADDRESS_RADIX=HEX;
+DATA_RADIX=HEX;
+
+CONTENT BEGIN
+	0000  :   000000;
+	0001  :   777777;
+	0002  :   ffffff;
+	0003  :   dddddd;
+	0004  :   eeeeee;
+	0005  :   999999;
+	0006  :   222222;
+	0007  :   444444;
+	0008  :   333333;
+	0009  :   666666;
+	000a  :   555555;
+	000b  :   aaaaaa;
+	000c  :   cccccc;
+	000d  :   bbbbbb;
+	000e  :   888888;
+	000f  :   111111;
+END;

@@ -10,9 +10,9 @@
 //    output reg [3:0] blue
 //    );
 //	
-///*
-//* These are the parameters for a 640x480 px display (60Hz refresh rate)
-//*/
+///* These are the parameters for a 640x480 px display (60Hz refresh rate)*/
+//
+
 //parameter hpixels = 800;
 //parameter vlines = 521;
 //parameter hpulse = 96;
@@ -124,25 +124,25 @@
 //* in the domain of the x-start, y-start and x-end, and y-end coordinates.
 //*/
 //function draw;
-//input [9:0] xStart;
-//input [9:0] yStart;
-//input [9:0] xEnd; 
-//input [9:0] yEnd;
-//input [11:0] color;
-//begin
-//    if (vc >= (vbp + yStart) && vc < (vbp + yEnd) && hc >= (hbp + xStart) && hc < (hbp + xEnd))
+//    input [9:0] xStart;
+//    input [9:0] yStart;
+//    input [9:0] xEnd; 
+//    input [9:0] yEnd;
+//    input [11:0] color;
 //    begin
-//        red = color[3:0];
-//        green = color[7:4];
-//        blue = color[11:8];
+//        if (vc >= (vbp + yStart) && vc < (vbp + yEnd) && hc >= (hbp + xStart) && hc < (hbp + xEnd))
+//        begin
+//            red = color[3:0];
+//            green = color[7:4];
+//            blue = color[11:8];
+//        end
+//        if (!inDisplay)
+//        begin
+//            red = 0;
+//            green = 0;
+//            blue = 0;
+//        end
 //    end
-//    if (!inDisplay)
-//    begin
-//        red = 0;
-//        green = 0;
-//        blue = 0;
-//    end
-//end
 //endfunction
 //
 ///*

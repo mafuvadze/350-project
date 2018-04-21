@@ -1,5 +1,5 @@
 -- file: chat_background_data2.mif
-WIDTH=8;
+WIDTH=12;
 DEPTH=307200;
 
 ADDRESS_RADIX=HEX;

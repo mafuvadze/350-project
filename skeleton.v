@@ -85,7 +85,8 @@ module skeleton(
 																		
 	 reg				data_ready;
 	 reg [31:0]		sound;
-	 reg [127:0]	message_in;
+	 reg [127:0]	message_in,
+						name;
 	 	 
 	 assign 			reset = 0;
 	 assign			fpga_state = SW[0];
@@ -100,6 +101,7 @@ module skeleton(
 	);
 	
 	initial begin
+		name		  = {80'h20202020202020202020, 8'd58, 8'd117, 8'd115, 8'd101, 8'd110, 8'd65};
 		data_ready = 0;
 		message_in = 0;
 	end
@@ -122,7 +124,7 @@ module skeleton(
 	assign LEDR[2] = fpga_state ? GPIO[35] : GPIO[34];
 	assign LEDR[1]	= write_done;
 	assign LEDR[0] = GPIO[32];
-	assign LEDR[17:3] = GPIO[17:3];
+	assign LEDR[6:3] = KEY;
 
 
 	// PS2
@@ -144,10 +146,10 @@ module skeleton(
 				
 	lcd mylcd (
 		CLOCK_50,
-		~RESETN,
+		(~RESETN | ~KEY[1] | ~KEY[2] | ~KEY[2]),
 		scan_code_ready,
 		ps2_ascii,
-		{80'h20202020202020202020, 8'd58, 8'd117, 8'd115, 8'd101, 8'd110, 8'd65},
+		name,
 		message_out,
 		LCD_DATA,
 		LCD_RW,
@@ -216,6 +218,12 @@ module skeleton(
 	assign left_channel_audio_out		= left_channel_audio_in + sound;
 	assign right_channel_audio_out	= right_channel_audio_in + sound;
 	assign write_audio_out				= 1'b1;
+
+	always @(negedge KEY[1] or negedge KEY[2] or negedge KEY[3]) begin
+		if (~KEY[1]) name = {80'h20202020202020202020, 8'd58, 8'd117, 8'd115, 8'd101, 8'd110, 8'd65};
+		else if (~KEY[2]) name = {72'h202020202020202020, 8'd58, 8'd97, 8'd114, 8'd117, 8'd107, 8'd97, 8'd83};
+		else if (~KEY[3]) name = {56'h20202020202020, 8'd58, 8'd108, 8'd108, 8'd101, 8'd104, 8'd99, 8'd116, 8'd105, 8'd77};
+	end
 	
     /** IMEM **/
     // Figure out how to generate a Quartus syncram component and commit the generated verilog file.

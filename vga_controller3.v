@@ -165,6 +165,8 @@ begin
 		bgr_data <= bgr_data_raw_bg1;
 	else if (background_switch_white)
 		bgr_data <= bgr_data_raw;
+	else 
+		bgr_data <= bgr_data_raw;
 end
 
 assign b_data = bgr_data[23:16];

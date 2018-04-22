@@ -30,8 +30,8 @@ output [7:0] r_data;
 reg [18:0] ADDR;
 reg [23:0] bgr_data;
 wire VGA_CLK_n;
-wire [7:0] index;
-wire [23:0] bgr_data_raw;
+wire [4:0] index, bgindex1;
+wire [23:0] bgr_data_raw, bgr_data_raw_bg1;
 wire cBLANK_n,cHS,cVS,rst;
 ////
 assign rst = ~iRST_n;
@@ -60,6 +60,13 @@ img_data	img_data_inst (
 	.q ( index )
 	);
 	
+bg_data1	bg_data_inst1 (
+	.address ( ADDR ),
+	.clock ( VGA_CLK_n ),
+	.q ( bgindex1 )
+	);
+	
+	
 /////////////////////////
 //////Add switch-input logic here
 	reg [18:0] xCor, yCor;
@@ -86,37 +93,37 @@ begin
 	counter <= counter + 1'd1;
 end
 
-wire [7:0] indexInput;
-reg [7:0] background_input;
+wire [4:0] indexInput;
+reg [4:0] background_input;
 wire isY, isX;
 wire isPlayer;
 
 wire background_switch;
-assign background_switch = 
-	background_switch_black || 
-	background_switch_white || 
-	background_switch_blue || 
-	background_switch_green || 
-	background_switch_red;
-
-always @(posedge iVGA_CLK)
-begin
-	if (background_switch_black)
-		background_input <= 8'd1;
-	else if (background_switch_white)
-		background_input <= 8'd0;
-	else if (background_switch_blue)
-		background_input <= 8'd0;
-	else if (background_switch_green)
-		background_input <= 8'd0;
-	else if (background_switch_red)
-		background_input <= 8'd0;
-end
-	
-assign indexInput = background_switch ? background_input : index;
-assign isX = xCor >= (ADDR%xSize + xSize - squareSize) && xCor <= (ADDR%xSize + xSize + squareSize);
-assign isY = yCor >= (ADDR/ySize + ySize - squareSize) && yCor <= (ADDR/ySize + ySize + squareSize);
-and isS(isPlayer, isX, isY);
+//assign background_switch = 
+//	background_switch_black || 
+//	background_switch_white || 
+//	background_switch_blue || 
+//	background_switch_green || 
+//	background_switch_red;
+//
+//always @(posedge iVGA_CLK)
+//begin
+//	if (background_switch_black)
+//		background_input <= 8'd1;
+//	else if (background_switch_white)
+//		background_input <= 8'd0;
+//	else if (background_switch_blue)
+//		background_input <= 8'd0;
+//	else if (background_switch_green)
+//		background_input <= 8'd0;
+//	else if (background_switch_red)
+//		background_input <= 8'd0;
+//end
+//	
+//assign indexInput = background_switch ? background_input : index;
+//assign isX = xCor >= (ADDR%xSize + xSize - squareSize) && xCor <= (ADDR%xSize + xSize + squareSize);
+//assign isY = yCor >= (ADDR/ySize + ySize - squareSize) && yCor <= (ADDR/ySize + ySize + squareSize);
+//and isS(isPlayer, isX, isY);
 
 //	wordRom wordRom (
 //		.address(),
@@ -138,13 +145,28 @@ and isS(isPlayer, isX, isY);
 	
 //////Color table output
 img_index	img_index_inst (
-	.address ( indexInput ),
+	.address ( index ),
 	.clock ( iVGA_CLK ),
 	.q ( bgr_data_raw)
 	);	
+	
+
+bg_index1	bg_index_inst1 (
+	.address ( bgindex1 ),
+	.clock ( iVGA_CLK ),
+	.q ( bgr_data_raw_bg1)
+	);	
+	
 //////
 //////latch valid data at falling edge;
-always@(posedge VGA_CLK_n) bgr_data <= bgr_data_raw;
+always@(posedge VGA_CLK_n) 
+begin
+	if(background_switch_black)
+		bgr_data <= bgr_data_raw_bg1;
+	else if (background_switch_white)
+		bgr_data <= bgr_data_raw;
+end
+
 assign b_data = bgr_data[23:16];
 assign g_data = bgr_data[15:8];
 assign r_data = bgr_data[7:0]; 

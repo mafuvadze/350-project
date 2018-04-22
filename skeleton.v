@@ -24,9 +24,18 @@ module skeleton(
 	LCD_BLON,
 	HEX0,
 	HEX1,
-	KEY
+	KEY,
+	AUD_ADCDAT,
+	AUD_BCLK,
+	AUD_ADCLRCK,
+	AUD_DACLRCK,
+	I2C_SDAT,
+	AUD_XCK,
+	AUD_DACDAT,
+	I2C_SCLK
 );
-    input 			CLOCK_50;
+    input 			CLOCK_50,
+						AUD_ADCDAT;
 	 input [1:0]	SW;
 	 input [3:0]	KEY;
 	 
@@ -39,12 +48,19 @@ module skeleton(
 						LCD_EN,
 						LCD_RS,
 						LCD_ON,
-						LCD_BLON;
+						LCD_BLON,
+						AUD_XCK,
+						AUD_DACDAT,
+						I2C_SCLK;
 	 
 	 inout [35:0]	GPIO;
 	 inout			PS2_DAT,
-						PS2_CLK;
-
+						PS2_CLK,
+						AUD_BCLK,
+						AUD_ADCLRCK,
+						AUD_DACLRCK,
+						I2C_SDAT;	
+					
 	 wire 			clock,
 						RESETN,
 						reset,
@@ -53,15 +69,22 @@ module skeleton(
 						data_pending,
 						clock_1hz,
 						scan_code_ready,
-						letter_case_out;
+						letter_case_out,
+						audio_in_available,
+						read_audio_in,
+						audio_out_allowed,
+						write_audio_out;
 	 wire [7:0]		ps2_scan_code,
 						ps2_ascii;
+	 wire [31:0]	left_channel_audio_in,
+						right_channel_audio_in,
+						left_channel_audio_out,
+						right_channel_audio_out;
 	 wire [127:0]	message_in_wire,
 						message_out;
-												
+																		
 	 reg				data_ready;
-	 reg [4:0]		message_out_counter;
-	 reg [7:0]		message_out_seg [15:0];
+	 reg [31:0]		sound;
 	 reg [127:0]	message_in;
 	 	 
 	 assign 			reset = 0;
@@ -77,7 +100,6 @@ module skeleton(
 	);
 	
 	initial begin
-		message_out_counter = 0;
 		data_ready = 0;
 		message_in = 0;
 	end
@@ -97,29 +119,10 @@ module skeleton(
 		.message_out(message_out)
 	);
 	
-	assign message_out = {
-		message_out_seg[0],
-		message_out_seg[1],
-		message_out_seg[2],
-		message_out_seg[3],
-		message_out_seg[4],
-		message_out_seg[5],
-		message_out_seg[6],
-		message_out_seg[7],
-		message_out_seg[8],
-		message_out_seg[9],
-		message_out_seg[10],
-		message_out_seg[11],
-		message_out_seg[12],
-		message_out_seg[13],
-		message_out_seg[14],
-		message_out_seg[15]
-	};
-	
 	assign LEDR[2] = fpga_state ? GPIO[35] : GPIO[34];
 	assign LEDR[1]	= write_done;
 	assign LEDR[0] = GPIO[32];
-	assign LEDR[17:3] = GPIO[17:0];
+	assign LEDR[17:3] = GPIO[17:3];
 
 
 	// PS2
@@ -138,12 +141,14 @@ module skeleton(
 		.scan_code		(ps2_scan_code),
 		.ascii_code		(ps2_ascii)
 	);
-		
+				
 	lcd mylcd (
 		CLOCK_50,
 		~RESETN,
 		scan_code_ready,
 		ps2_ascii,
+		{80'h20202020202020202020, 8'd58, 8'd117, 8'd115, 8'd101, 8'd110, 8'd65},
+		message_out,
 		LCD_DATA,
 		LCD_RW,
 		LCD_EN,
@@ -153,14 +158,64 @@ module skeleton(
 	);
 	
 //	Hexadecimal_To_Seven_Segment hex1 (
-//		ps2_out[3:0],
+//		count_seg[3:0],
 //		HEX0
 //	);
 //	
 //	Hexadecimal_To_Seven_Segment hex2 (
-//		ps2_out[7:4],
+//		count_seg[7:4],
 //		HEX1
 //	);
+
+
+//  Audio
+	 reg [31:0] counter;
+
+	 initial
+	 begin
+		 counter = 32'b0;
+		 sound = 32'b0;
+	 end
+	 
+	 always @(posedge CLOCK_50) begin
+		if (counter == (32'd1250000)) begin
+			 counter <= 32'b0;
+		end
+		
+		if (~write_done) begin
+			sound <= 32'b0;
+		end else begin
+			sound <= sound + 32'd100000000;
+		end
+		
+		counter <= counter+1;
+	end
+
+	Audio_Controller Audio_Controller (
+		.CLOCK_50						(CLOCK_50),
+		.reset							(~KEY[0]),
+		.read_audio_in					(read_audio_in),
+		.left_channel_audio_out		(left_channel_audio_out),
+		.right_channel_audio_out	(right_channel_audio_out),
+		.write_audio_out				(write_audio_out),
+		.AUD_ADCDAT						(AUD_ADCDAT),
+		.AUD_BCLK						(AUD_BCLK),
+		.AUD_ADCLRCK					(AUD_ADCLRCK),
+		.AUD_DACLRCK					(AUD_DACLRCK),
+		.audio_in_available			(audio_in_available),
+		.left_channel_audio_in		(left_channel_audio_in),
+		.right_channel_audio_in		(right_channel_audio_in),
+		.audio_out_allowed			(audio_out_allowed),
+		.AUD_XCK							(AUD_XCK),
+		.AUD_DACDAT						(AUD_DACDAT),
+
+	);
+	
+	assign read_audio_in	= 1'b1;
+	
+	assign left_channel_audio_out		= left_channel_audio_in + sound;
+	assign right_channel_audio_out	= right_channel_audio_in + sound;
+	assign write_audio_out				= 1'b1;
 	
     /** IMEM **/
     // Figure out how to generate a Quartus syncram component and commit the generated verilog file.

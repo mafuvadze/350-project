@@ -1,9 +1,11 @@
-module lcd(clock, reset, write_en, data, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon);
+module lcd(clock, reset, write_en, data, name, char_buffer, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon);
 
 	input clock, reset, write_en;
 	input [7:0] data;
+	input [127:0] name;
 	output _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon;
 	output [7:0] _lcd_data;
+	output [127:0] char_buffer;
 	
 	typedef enum {A,B,C,D} state_type;
 	state_type state1, state2;
@@ -12,8 +14,46 @@ module lcd(clock, reset, write_en, data, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _
 	reg lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon;
 	reg [7:0] lcd_data;
 	
+	wire [7:0] name_seg [15:0];
+	
 	typedef reg [7:0] line_type [0:15];
 	line_type line1, line2;
+	
+	assign name_seg[0] = name[7:0];
+	assign name_seg[1] = name[15:8];
+	assign name_seg[2] = name[23:16];
+	assign name_seg[3] = name[31:24];
+	assign name_seg[4] = name[39:32];
+	assign name_seg[5] = name[47:40];
+	assign name_seg[6] = name[55:48];
+	assign name_seg[7] = name[63:56];
+	assign name_seg[8] = name[71:64];
+	assign name_seg[9] = name[79:72];
+	assign name_seg[10] = name[87:80];
+	assign name_seg[11] = name[95:88];
+	assign name_seg[12] = name[103:96];
+	assign name_seg[13] = name[111:104];
+	assign name_seg[14] = name[119:112];
+	assign name_seg[15] = name[127:120];
+	
+	assign char_buffer = {
+		line2[0],
+		line2[1],
+		line2[2],
+		line2[3],
+		line2[4],
+		line2[5],
+		line2[6],
+		line2[7],
+		line2[8],
+		line2[9],
+		line2[10],
+		line2[11],
+		line2[12],
+		line2[13],
+		line2[14],
+		line2[15],
+	};
 
 	reg [3:0] ptr;
 	reg [5:0] index;
@@ -21,7 +61,7 @@ module lcd(clock, reset, write_en, data, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _
 	reg [4:0] count;
 	reg cstart, cdone, prestart, mstart;
 	reg printed_crlf, valid_char, buf_changed, buf_changed_ack;
-
+	
 	always @(*) begin
 		if (data >= 32 && data < 128) begin
 			valid_char <= 1;
@@ -40,7 +80,7 @@ module lcd(clock, reset, write_en, data, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _
 			printed_crlf <= 0;
 			ptr <= 0;
 			for (i=0; i<=15; i=i+1) begin
-				line1[i] <= 8'h20;
+				line1[i] <= name_seg[i];
 				line2[i] <= 8'h20;
 			end
 			
@@ -52,7 +92,7 @@ module lcd(clock, reset, write_en, data, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _
 			if (write_en==1) begin
 				if (data==9'h0D || (ptr==0 && valid_char==1 && printed_crlf==0)) begin
 					for (i=0; i<=15; i=i+1) begin
-						line1[i] <= line2[i];
+						line1[i] <= name_seg[i];
 						line2[i] <= 8'h20;
 						buf_changed <= 1;
 					end

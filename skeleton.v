@@ -52,16 +52,15 @@ module skeleton(
 						write_done,
 						data_pending,
 						clock_1hz,
-						ps2_key_pressed;
-	 wire [7:0]	 	ps2_key_data,
-						ps2_out,
-						ps2_to_lcd;	
+						scan_code_ready,
+						letter_case_out;
+	 wire [7:0]		ps2_scan_code,
+						ps2_ascii;
 	 wire [127:0]	message_in_wire,
 						message_out;
 												
 	 reg				data_ready;
 	 reg [4:0]		message_out_counter;
-	 reg [7:0] 		ps2_data_ascii;
 	 reg [7:0]		message_out_seg [15:0];
 	 reg [127:0]	message_in;
 	 	 
@@ -86,19 +85,6 @@ module skeleton(
 	always @(posedge data_pending or posedge write_done) begin
 		if (write_done) data_ready = 0;
 		else data_ready = 1;
-	end
-	
-	always @(posedge RESETN or posedge ps2_key_pressed) begin
-		if (RESETN) begin
-			message_out_counter = 0;
-		end else begin
-			message_out_seg[message_out_counter] = ps2_key_data;
-			if (message_out_counter >= 15) begin
-				message_out_counter = 0;
-			end else begin
-				message_out_counter = message_out_counter + 1;
-			end
-		end
 	end
 	
 	gpio_protocol comm (
@@ -137,56 +123,27 @@ module skeleton(
 
 
 	// PS2
-	PS2_Interface myps2 (
-		CLOCK_50,
-		RESETN,
-		PS2_CLK,
-		PS2_DAT,
-		ps2_key_data,
-		ps2_key_pressed,
-		ps2_out
+	ps2_keyboard ps2 (
+		.clk					(CLOCK_50),
+		.ps2d					(PS2_DAT),
+		.ps2c					(PS2_CLK),
+		.reset				(reset),
+		.scan_code			(ps2_scan_code),
+		.scan_code_ready	(scan_code_ready),
+		.letter_case_out	(letter_case_out)
 	);
 	
-	always @(posedge clock_1hz) begin
-		case(ps2_out)
-			8'h1C: ps2_data_ascii <= 8'd97;  // a
-			8'h32: ps2_data_ascii <= 8'd98;  // b 
-			8'h21: ps2_data_ascii <= 8'd99;  // c
-			8'h23: ps2_data_ascii <= 8'd100; // d
-			8'h24: ps2_data_ascii <= 8'd101; // e
-			8'h2B: ps2_data_ascii <= 8'd102; // f 
-			8'h34: ps2_data_ascii <= 8'd103; // g
-			8'h33: ps2_data_ascii <= 8'd104; // h
-			8'h43: ps2_data_ascii <= 8'd105; // i
-			8'h3B: ps2_data_ascii <= 8'd106; // j 
-			8'h42: ps2_data_ascii <= 8'd107; // k
-			8'h4B: ps2_data_ascii <= 8'd108; // l
-			8'h3A: ps2_data_ascii <= 8'd109; // m
-			8'h31: ps2_data_ascii <= 8'd110; // n
-			8'h44: ps2_data_ascii <= 8'd111; // o
-			8'h4D: ps2_data_ascii <= 8'd112; // p
-			8'h15: ps2_data_ascii <= 8'd113; // q
-			8'h2D: ps2_data_ascii <= 8'd114; // r
-			8'h1B: ps2_data_ascii <= 8'd115; // s
-			8'h2C: ps2_data_ascii <= 8'd116; // t
-			8'h3C: ps2_data_ascii <= 8'd117; // u
-			8'h2A: ps2_data_ascii <= 8'd118; // v
-			8'h1D: ps2_data_ascii <= 8'd119; // w
-			8'h22: ps2_data_ascii <= 8'd120; // x
-			8'h35: ps2_data_ascii <= 8'd121; // y
-			8'h1A: ps2_data_ascii <= 8'd122; // z
-			8'h29: ps2_data_ascii <= 8'd32;  // space 
-			8'h66: ps2_data_ascii <= 8'd127; // del
-		endcase 
-	end
-
-	assign ps2_to_lcd = ps2_data_ascii; 
-	
+	key2ascii convert (
+		.letter_case	(letter_case_out),
+		.scan_code		(ps2_scan_code),
+		.ascii_code		(ps2_ascii)
+	);
+		
 	lcd mylcd (
 		CLOCK_50,
 		~RESETN,
-		1'b1,
-		ps2_to_lcd,
+		scan_code_ready,
+		ps2_ascii,
 		LCD_DATA,
 		LCD_RW,
 		LCD_EN,
@@ -195,15 +152,15 @@ module skeleton(
 		LCD_BLON
 	);
 	
-	Hexadecimal_To_Seven_Segment hex1 (
-		ps2_out[3:0],
-		HEX0
-	);
-	
-	Hexadecimal_To_Seven_Segment hex2 (
-		ps2_out[7:4],
-		HEX1
-	);
+//	Hexadecimal_To_Seven_Segment hex1 (
+//		ps2_out[3:0],
+//		HEX0
+//	);
+//	
+//	Hexadecimal_To_Seven_Segment hex2 (
+//		ps2_out[7:4],
+//		HEX1
+//	);
 	
     /** IMEM **/
     // Figure out how to generate a Quartus syncram component and commit the generated verilog file.

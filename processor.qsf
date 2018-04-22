@@ -1300,17 +1300,16 @@ set_global_assignment -name EDA_TEST_BENCH_FILE alu_tb.v -section_id alu_tb
 set_global_assignment -name EDA_TEST_BENCH_FILE mux_2.v -section_id alu_tb
 set_global_assignment -name EDA_TEST_BENCH_FILE mux_4.v -section_id alu_tb
 set_global_assignment -name EDA_TEST_BENCH_FILE mux_32.v -section_id alu_tb
+set_global_assignment -name VERILOG_FILE ps2_rx.v
+set_global_assignment -name VERILOG_FILE ps2_keyboard.v
+set_global_assignment -name VERILOG_FILE key2ascii.v
 set_global_assignment -name VERILOG_FILE vh_sync.v
 set_global_assignment -name VERILOG_FILE vga_data.v
 set_global_assignment -name VERILOG_FILE vga_controller.v
-set_global_assignment -name VERILOG_FILE PS2_Interface.v
-set_global_assignment -name VERILOG_FILE PS2_Controller.v
 set_global_assignment -name VERILOG_FILE img_index.v
 set_global_assignment -name VERILOG_FILE img_data.v
 set_global_assignment -name VERILOG_FILE hsync_generator.v
 set_global_assignment -name VERILOG_FILE Hexadecimal_To_Seven_Segment.v
-set_global_assignment -name VERILOG_FILE Altera_UP_PS2_Data_In.v
-set_global_assignment -name VERILOG_FILE Altera_UP_PS2_Command_Out.v
 set_global_assignment -name SYSTEMVERILOG_FILE lcd.sv
 set_global_assignment -name VERILOG_FILE dmem.v
 set_global_assignment -name VERILOG_FILE imem.v

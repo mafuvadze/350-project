@@ -1,6 +1,7 @@
-module lcd(clock, reset, write_en, data, prompt, char_buffer, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon);
+module lcd(clock, reset, write_en, print_data, data, prompt, char_buffer, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon);
 
 	input clock, reset, write_en;
+	input [127:0] print_data;
 	input [7:0] data;
 	input [127:0] prompt;
 	output _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon;
@@ -15,6 +16,7 @@ module lcd(clock, reset, write_en, data, prompt, char_buffer, _lcd_data, _lcd_rw
 	reg [7:0] lcd_data;
 	
 	wire [7:0] prompt_seg [15:0];
+	wire [7:0] print_data_seg [15:0];
 	
 	typedef reg [7:0] line_type [0:15];
 	line_type line1, line2;
@@ -35,6 +37,23 @@ module lcd(clock, reset, write_en, data, prompt, char_buffer, _lcd_data, _lcd_rw
 	assign prompt_seg[13] = prompt[111:104];
 	assign prompt_seg[14] = prompt[119:112];
 	assign prompt_seg[15] = prompt[127:120];
+	
+	assign print_data_seg[0] = print_data[7:0];
+	assign print_data_seg[1] = print_data[15:8];
+	assign print_data_seg[2] = print_data[23:16];
+	assign print_data_seg[3] = print_data[31:24];
+	assign print_data_seg[4] = print_data[39:32];
+	assign print_data_seg[5] = print_data[47:40];
+	assign print_data_seg[6] = print_data[55:48];
+	assign print_data_seg[7] = print_data[63:56];
+	assign print_data_seg[8] = print_data[71:64];
+	assign print_data_seg[9] = print_data[79:72];
+	assign print_data_seg[10] = print_data[87:80];
+	assign print_data_seg[11] = print_data[95:88];
+	assign print_data_seg[12] = print_data[103:96];
+	assign print_data_seg[13] = print_data[111:104];
+	assign print_data_seg[14] = print_data[119:112];
+	assign print_data_seg[15] = print_data[127:120];
 	
 	assign char_buffer = {
 		line2[0],
@@ -81,7 +100,7 @@ module lcd(clock, reset, write_en, data, prompt, char_buffer, _lcd_data, _lcd_rw
 			ptr <= 0;
 			for (i=0; i<=15; i=i+1) begin
 				line1[i] <= prompt_seg[i];
-				line2[i] <= 8'h20;
+				line2[i] <= write_en ? 8'h20 : print_data_seg[i];
 			end
 			
 		end else begin		
@@ -107,7 +126,9 @@ module lcd(clock, reset, write_en, data, prompt, char_buffer, _lcd_data, _lcd_rw
 					ptr <= ptr+4'b1;
 					buf_changed <= 1;
 				end
-			end	
+			end else begin
+				line2[i] <= print_data_seg[i];
+			end
 		end
 	end
 

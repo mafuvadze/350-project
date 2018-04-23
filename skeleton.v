@@ -72,7 +72,12 @@ module skeleton(
 						read_audio_in,
 						audio_out_allowed,
 						write_audio_out,
-						lcd_reset;
+						lcd_reset,
+						lcd_write_en;
+	 wire [1:0]		login_state,
+						password_state,
+						sending_state,
+						recieving_state;
 	 wire [7:0]		ps2_scan_code,
 						ps2_ascii;
 	 wire [31:0]	left_channel_audio_in,
@@ -80,9 +85,15 @@ module skeleton(
 						left_channel_audio_out,
 						right_channel_audio_out;
 	 wire [127:0]	message_in_wire,
-						message_out;
+						message_out,
+						lcd_prompt,
+						lcd_display,
+						login_prompt,
+						password_prompt,
+						login_choice;
 																		
 	 reg				data_ready;
+	 reg [1:0]		diplay_state;
 	 reg [31:0]		sound,
 						counter;
 	 reg [127:0]	message_in,
@@ -95,6 +106,13 @@ module skeleton(
 	 assign			fpga_state 		= SW[0];
 	 assign 			data_pending 	= SW[1];
 	 assign 			RESETN 			= KEY[0];
+	 assign			login_state		= 2'd0;
+	 assign			password_state = 2'd1;
+	 assign			sending_state	= 2'd2;
+	 assign			recieving_state= 2'd3;
+	 assign			login_choice	= {8'h20, 8'h62, 8'h6F, 8'h42, 8'h5D, 8'h32, 8'h5B, 8'h20, 8'h79, 8'h6C, 8'h6C, 8'h69, 8'h42, 8'h5D, 8'h31, 8'h5B};
+	 assign			login_prompt	= {8'h20, 8'h20, 8'h20, 8'h20, 8'h3A, 8'h72, 8'h65, 8'h73, 8'h55, 8'h20, 8'h74, 8'h63, 8'h65, 8'h6C, 8'h65, 8'h53};
+	 assign			password_prompt= {8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h3A, 8'h64, 8'h72, 8'h6F, 8'h77, 8'h73, 8'h73, 8'h61, 8'h50};
 	 
 	// GPIO protocol
 	clock_divider_50mhz_1hz clk_divider (
@@ -103,11 +121,12 @@ module skeleton(
 	);
 
 	initial begin
-		name		  = {80'h20202020202020202020, 8'd58, 8'd117, 8'd115, 8'd101, 8'd110, 8'd65};
-		data_ready = LOW;
-		message_in = LOW;
-		counter 	  = 32'b0;
-		sound 	  = 32'b0;
+		name		  		= {80'h20202020202020202020, 8'd58, 8'd117, 8'd115, 8'd101, 8'd110, 8'd65};
+		data_ready 		= 0;
+		message_in 		= 32'b0;
+		diplay_state 	= 2'b0;
+		counter 	  		= 32'b0;
+		sound 	  		= 32'b0;
 	end
 
 	always @(posedge data_pending or posedge write_done) begin
@@ -132,6 +151,8 @@ module skeleton(
 
 
 	// PS2
+	assign lcd_write_en = scan_code_ready & ((diplay_state == password_state) | (diplay_state == sending_state));			
+
 	ps2_keyboard ps2 (
 		.clk					(CLOCK_50),
 		.ps2d					(PS2_DAT),
@@ -147,13 +168,14 @@ module skeleton(
 		.scan_code			(ps2_scan_code),
 		.ascii_code			(ps2_ascii)
 	);
-				
+
 	lcd mylcd (
 		CLOCK_50,
 		lcd_reset,
-		scan_code_ready,
+		lcd_write_en,
+		lcd_display,
 		ps2_ascii,
-		name,
+		lcd_prompt,
 		message_out,
 		LCD_DATA,
 		LCD_RW,
@@ -162,6 +184,24 @@ module skeleton(
 		LCD_ON,
 		LCD_BLON
 	);
+	
+	mux_4_128b display_prompt (
+		.out 	(lcd_prompt),
+		.opt0 (login_prompt),
+		.opt1	(password_prompt),
+		.opt2	(name),
+		.opt3	(name),
+		.sel	(diplay_state)
+	);
+	
+	mux_4_128b display_main (
+		.out 	(lcd_display),
+		.opt0 (login_choice),
+		.opt1	(),
+		.opt2	(),
+		.opt3	(),
+		.sel	(diplay_state)
+	);
 	 
 	 always @(posedge CLOCK_50) begin
 		if (counter == (32'd1250000)) counter <= 32'b0;
@@ -169,7 +209,7 @@ module skeleton(
 		if (~write_done) sound <= 32'b0;
 		else sound <= sound + 32'd100000000;
 		
-		counter <= counter+1;
+		counter <= counter + 1;
 	end
 
 	Audio_Controller Audio_Controller (
@@ -188,8 +228,7 @@ module skeleton(
 		.right_channel_audio_in		(right_channel_audio_in),
 		.audio_out_allowed			(audio_out_allowed),
 		.AUD_XCK							(AUD_XCK),
-		.AUD_DACDAT						(AUD_DACDAT),
-
+		.AUD_DACDAT						(AUD_DACDAT)
 	);
 
 	assign read_audio_in					= 1'b1;

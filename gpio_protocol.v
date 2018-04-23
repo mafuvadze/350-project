@@ -45,7 +45,7 @@ module gpio_protocol (GPIO, clock, data_ready, state, done, received, message_ou
 	assign GPIO[35] = state ? data_ready : 1'bz;
 	assign other_data_ready = state ? GPIO[34] : GPIO[35];
 	assign done = done_reg;
-	assign received = GPIO[33] & (other_data_ready);
+	assign received = GPIO[33] & (state ? GPIO[35] : GPIO[34]);
 	
 	// Message
 	assign data_out[0] = message_out[31:0];

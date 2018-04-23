@@ -30,9 +30,12 @@ output [7:0] r_data;
 reg [18:0] ADDR;
 reg [23:0] bgr_data;
 wire VGA_CLK_n;
-wire [4:0] index, bgindex1;
+wire [7:0] index;
+wire [4:0] bgindex1;
 wire [23:0] bgr_data_raw, bgr_data_raw_bg1;
 wire cBLANK_n,cHS,cVS,rst;
+reg background_switch;
+
 ////
 assign rst = ~iRST_n;
 video_sync_generator LTM_ins (.vga_clk(iVGA_CLK),
@@ -51,21 +54,30 @@ begin
   else if (cBLANK_n==1'b1)
      ADDR<=ADDR+1;
 end
+
+
+always@(*) begin
+	if(background_switch_black) begin
+		background_switch <= 1;
+	end
+	else background_switch <= 0;
+end
+
 //////////////////////////
 //////INDEX addr.
 assign VGA_CLK_n = ~iVGA_CLK;
-img_data	img_data_inst (
+bg_data2	img_data_inst (
 	.address ( ADDR ),
 	.clock ( VGA_CLK_n ),
 	.q ( index )
 	);
 	
-bg_data1	bg_data_inst1 (
-	.address ( ADDR ),
-	.clock ( VGA_CLK_n ),
-	.q ( bgindex1 )
-	);
-	
+//bg_data1	bg_data_inst1 (
+//	.address ( ADDR ),
+//	.clock ( VGA_CLK_n ),
+//	.q ( bgindex1 )
+//	);
+//	
 	
 /////////////////////////
 //////Add switch-input logic here
@@ -98,7 +110,6 @@ reg [4:0] background_input;
 wire isY, isX;
 wire isPlayer;
 
-wire background_switch;
 //assign background_switch = 
 //	background_switch_black || 
 //	background_switch_white || 
@@ -144,30 +155,25 @@ wire background_switch;
 //end
 	
 //////Color table output
-img_index	img_index_inst (
+bg_index2	img_index_inst (
 	.address ( index ),
 	.clock ( iVGA_CLK ),
 	.q ( bgr_data_raw)
 	);	
 	
 
-bg_index1	bg_index_inst1 (
-	.address ( bgindex1 ),
-	.clock ( iVGA_CLK ),
-	.q ( bgr_data_raw_bg1)
-	);	
-	
+//bg_index1	bg_index_inst1 (
+//	.address ( bgindex1 ),
+//	.clock ( iVGA_CLK ),
+//	.q ( bgr_data_raw_bg1)
+//	);	
+//	
 //////
 //////latch valid data at falling edge;
-always@(posedge VGA_CLK_n) 
-begin
-	if(background_switch_black)
-		bgr_data <= bgr_data_raw_bg1;
-	else if (background_switch_white)
-		bgr_data <= bgr_data_raw;
-	else 
-		bgr_data <= bgr_data_raw;
-end
+
+wire[23:0] new_background_bgr = background_switch ? bgr_data_raw_bg1 : bgr_data_raw;
+
+always@(posedge VGA_CLK_n) bgr_data <= new_background_bgr;
 
 assign b_data = bgr_data[23:16];
 assign g_data = bgr_data[15:8];

@@ -34,7 +34,7 @@ module skeleton(
 );
 	 input 			CLOCK_50,
 						AUD_ADCDAT;
-	 input [1:0]	SW;
+	 input [4:0]	SW;
 	 input [3:0]	KEY;
 	 
 	 
@@ -80,13 +80,14 @@ module skeleton(
 						left_channel_audio_out,
 						right_channel_audio_out;
 	 wire [127:0]	message_in_wire,
-						message_out;
+						lcd_message_out;
 																		
 	 reg				data_ready;
 	 reg [31:0]		sound,
 						counter;
 	 reg [127:0]	message_in,
-						name;
+						name, 
+						message_out;
 		 
 	 assign 			HIGH				= 1;
 	 assign 			LOW				= 0;
@@ -154,7 +155,7 @@ module skeleton(
 		scan_code_ready,
 		ps2_ascii,
 		name,
-		message_out,
+		lcd_message_out,
 		LCD_DATA,
 		LCD_RW,
 		LCD_EN,
@@ -202,6 +203,31 @@ module skeleton(
 		else if (~KEY[2]) name = {72'h202020202020202020, 8'd58, 8'd97, 8'd114, 8'd117, 8'd107, 8'd97, 8'd83};
 		else if (~KEY[3]) name = {56'h20202020202020, 8'd58, 8'd108, 8'd108, 8'd101, 8'd104, 8'd99, 8'd116, 8'd105, 8'd77};
 	end
+	
+	//PRESET MESSAGES / EMOJIS
+	wire smiley, frown, pre_message; 
+	assign smiley = SW[2];
+	assign frown = SW[3]; 
+	assign pre_message = SW[4]; 
+	reg [127:0] emoji; 
+	
+	always @ (posedge smiley or posedge frown or posedge pre_message) begin
+		if (smiley) emoji = {120'h202020202020202020202020202020, 8'd41, 8'd58}; 
+		else if (frown) emoji = {120'h202020202020202020202020202020, 8'd40, 8'd58}; 
+		else if (pre_message) emoji= {8'h20, 8'h21, 8'h6C, 8'h79, 8'h74, 8'h74, 8'h20, 8'h2C, 8'h79, 8'h73, 8'h75, 8'h62, 8'h20, 8'h6D, 8'h27, 8'h69};
+	end
+	
+	//choose between presets and keyboard
+	always @* begin
+		if (smiley == 1'b1 || frown == 1'b1 || pre_message == 1'b1) begin
+			message_out <= emoji;
+		end else begin
+			message_out <= lcd_message_out;
+		end
+	end
+	
+
+	
 
 	 /** IMEM **/
 	 // Figure out how to generate a Quartus syncram component and commit the generated verilog file.

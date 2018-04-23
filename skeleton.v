@@ -74,7 +74,8 @@ module skeleton(
 						write_audio_out,
 						lcd_reset,
 						lcd_write_en,
-						user_selected;
+						user_selected,
+						received;
 	 wire [1:0]		login_state,
 						password_state,
 						sending_state,
@@ -107,7 +108,7 @@ module skeleton(
 	 assign 			LOW				= 0;
 	 assign 			reset 			= LOW;
 	 assign			user_selected	= (display_state == login_state) & ((ps2_ascii == 8'd49) | (ps2_ascii == 8'd50));				
-	 assign			lcd_reset		= ~KEY[0] | ~KEY[1] | ~KEY[2] | ~KEY[3] | user_selected;
+	 assign			lcd_reset		= ~KEY[0] | ~KEY[1] | ~KEY[2] | ~KEY[3] | user_selected | received;
 	 assign			fpga_state 		= SW[0];
 	 assign 			data_pending 	= SW[1];
 	 assign 			RESETN 			= KEY[0];
@@ -138,7 +139,10 @@ module skeleton(
 	end
 
 	always @(posedge data_pending or posedge write_done) begin
-		if (write_done) data_ready = LOW;
+		if (write_done) begin
+			data_ready = LOW;
+			message_in = message_in_wire;
+		end
 		else data_ready = HIGH;
 	end
 
@@ -146,6 +150,7 @@ module skeleton(
 		.GPIO			(GPIO),
 		.clock		(clock_1hz),
 		.data_ready	(data_ready),
+		.received	(received),
 		.done			(write_done),
 		.state		(fpga_state),
 		.message_in	(message_in_wire),
@@ -175,6 +180,10 @@ module skeleton(
 		end else if (display_state == password_state) begin
 			if (ps2_ascii == 8'd13) begin
 				display_state = sending_state;
+			end
+		end else if (display_state == sending_state) begin
+			if (received) begin
+				display_state = recieving_state;
 			end
 		end
 	end
@@ -225,7 +234,7 @@ module skeleton(
 		.opt0 (login_choice),
 		.opt1	(spaces),
 		.opt2	(spaces),
-		.opt3	(spaces),
+		.opt3	(message_in_wire),
 		.sel	(display_state)
 	);
 	 

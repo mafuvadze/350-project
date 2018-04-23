@@ -73,7 +73,8 @@ module skeleton(
 						audio_out_allowed,
 						write_audio_out,
 						lcd_reset,
-						lcd_write_en;
+						lcd_write_en,
+						user_selected;
 	 wire [1:0]		login_state,
 						password_state,
 						sending_state,
@@ -90,10 +91,13 @@ module skeleton(
 						lcd_display,
 						login_prompt,
 						password_prompt,
-						login_choice;
+						login_choice,
+						billy,
+						bob,
+						spaces;
 																		
 	 reg				data_ready;
-	 reg [1:0]		diplay_state;
+	 reg [1:0]		display_state;
 	 reg [31:0]		sound,
 						counter;
 	 reg [127:0]	message_in,
@@ -102,14 +106,18 @@ module skeleton(
 	 assign 			HIGH				= 1;
 	 assign 			LOW				= 0;
 	 assign 			reset 			= LOW;
-	 assign			lcd_reset		= ~KEY[0] | ~KEY[1] | ~KEY[2] | ~KEY[3];
+	 assign			user_selected	= (display_state == login_state) & ((ps2_ascii == 8'd49) | (ps2_ascii == 8'd50));				
+	 assign			lcd_reset		= ~KEY[0] | ~KEY[1] | ~KEY[2] | ~KEY[3] | user_selected;
 	 assign			fpga_state 		= SW[0];
 	 assign 			data_pending 	= SW[1];
 	 assign 			RESETN 			= KEY[0];
-	 assign			login_state		= 2'd0;
-	 assign			password_state = 2'd1;
-	 assign			sending_state	= 2'd2;
-	 assign			recieving_state= 2'd3;
+	 assign			login_state		= 2'b00;
+	 assign			password_state = 2'b01;
+	 assign			sending_state	= 2'b10;
+	 assign			recieving_state= 2'b11;
+	 assign			bob				= {8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h3A, 8'h29, 8'h62, 8'h6F, 8'h42, 8'h28, 8'h20, 8'h75, 8'h6F, 8'h59};
+	 assign			billy				= {8'h20, 8'h20, 8'h20, 8'h20, 8'h3A, 8'h29, 8'h79, 8'h6C, 8'h6C, 8'h69, 8'h42, 8'h28, 8'h20, 8'h75, 8'h6F, 8'h59};
+	 assign			spaces			= {8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20};
 	 assign			login_choice	= {8'h20, 8'h62, 8'h6F, 8'h42, 8'h5D, 8'h32, 8'h5B, 8'h20, 8'h79, 8'h6C, 8'h6C, 8'h69, 8'h42, 8'h5D, 8'h31, 8'h5B};
 	 assign			login_prompt	= {8'h20, 8'h20, 8'h20, 8'h20, 8'h3A, 8'h72, 8'h65, 8'h73, 8'h55, 8'h20, 8'h74, 8'h63, 8'h65, 8'h6C, 8'h65, 8'h53};
 	 assign			password_prompt= {8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h20, 8'h3A, 8'h64, 8'h72, 8'h6F, 8'h77, 8'h73, 8'h73, 8'h61, 8'h50};
@@ -124,7 +132,7 @@ module skeleton(
 		name		  		= {80'h20202020202020202020, 8'd58, 8'd117, 8'd115, 8'd101, 8'd110, 8'd65};
 		data_ready 		= 0;
 		message_in 		= 32'b0;
-		diplay_state 	= 2'b0;
+		display_state 	= login_state;
 		counter 	  		= 32'b0;
 		sound 	  		= 32'b0;
 	end
@@ -147,12 +155,30 @@ module skeleton(
 	assign LEDR[2] 	= fpga_state ? GPIO[35] : GPIO[34];
 	assign LEDR[1]		= write_done;
 	assign LEDR[0] 	= GPIO[32];
-	assign LEDR[6:3] 	= KEY;
+	assign LEDR[4:3] 	= display_state;
 
 
 	// PS2
-	assign lcd_write_en = scan_code_ready & ((diplay_state == password_state) | (diplay_state == sending_state));			
+	assign lcd_write_en = scan_code_ready & ((display_state == password_state) | (display_state == sending_state));			
 
+	always @(posedge CLOCK_50 or posedge (~KEY[1])) begin
+		if (~KEY[1]) begin
+			display_state = login_state;
+		end else if (display_state == login_state) begin
+			if (ps2_ascii == 8'd49) begin
+				name = billy;
+				display_state = password_state;
+			end else if (ps2_ascii == 8'd50) begin
+				name = bob;
+				display_state = password_state;
+			end
+		end else if (display_state == password_state) begin
+			if (ps2_ascii == 8'd13) begin
+				display_state = sending_state;
+			end
+		end
+	end
+	
 	ps2_keyboard ps2 (
 		.clk					(CLOCK_50),
 		.ps2d					(PS2_DAT),
@@ -191,16 +217,16 @@ module skeleton(
 		.opt1	(password_prompt),
 		.opt2	(name),
 		.opt3	(name),
-		.sel	(diplay_state)
+		.sel	(display_state)
 	);
 	
 	mux_4_128b display_main (
 		.out 	(lcd_display),
 		.opt0 (login_choice),
-		.opt1	(),
-		.opt2	(),
-		.opt3	(),
-		.sel	(diplay_state)
+		.opt1	(spaces),
+		.opt2	(spaces),
+		.opt3	(spaces),
+		.sel	(display_state)
 	);
 	 
 	 always @(posedge CLOCK_50) begin
@@ -235,12 +261,6 @@ module skeleton(
 	assign left_channel_audio_out		= left_channel_audio_in + sound;
 	assign right_channel_audio_out	= right_channel_audio_in + sound;
 	assign write_audio_out				= 1'b1;
-
-	always @(negedge KEY[1] or negedge KEY[2] or negedge KEY[3]) begin
-		if (~KEY[1]) name = {80'h20202020202020202020, 8'd58, 8'd117, 8'd115, 8'd101, 8'd110, 8'd65};
-		else if (~KEY[2]) name = {72'h202020202020202020, 8'd58, 8'd97, 8'd114, 8'd117, 8'd107, 8'd97, 8'd83};
-		else if (~KEY[3]) name = {56'h20202020202020, 8'd58, 8'd108, 8'd108, 8'd101, 8'd104, 8'd99, 8'd116, 8'd105, 8'd77};
-	end
 
 	 /** IMEM **/
 	 // Figure out how to generate a Quartus syncram component and commit the generated verilog file.

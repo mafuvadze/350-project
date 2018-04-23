@@ -34,7 +34,7 @@ module skeleton(
 );
 	 input 			CLOCK_50,
 						AUD_ADCDAT;
-	 input [1:0]	SW;
+	 input [4:0]	SW;
 	 input [3:0]	KEY;
 	 
 	 
@@ -87,7 +87,7 @@ module skeleton(
 						left_channel_audio_out,
 						right_channel_audio_out;
 	 wire [127:0]	message_in_wire,
-						message_out,
+						lcd_message_out,
 						lcd_prompt,
 						lcd_display,
 						login_prompt,
@@ -102,7 +102,9 @@ module skeleton(
 	 reg [31:0]		sound,
 						counter;
 	 reg [127:0]	message_in,
-						name;
+						name,
+						message_out, 
+						emoji;
 		 
 	 assign 			HIGH				= 1;
 	 assign 			LOW				= 0;
@@ -195,6 +197,28 @@ module skeleton(
 		end
 	end
 	
+	//PRESET MESSAGES / EMOJIS
+	wire smiley, frown, pre_message; 
+	assign smiley = SW[2];
+	assign frown = SW[3]; 
+	assign pre_message = SW[4]; 
+
+	always @ (posedge smiley or posedge frown or posedge pre_message) begin
+		if (smiley) emoji = {120'h202020202020202020202020202020, 8'd41, 8'd58}; 
+		else if (frown) emoji = {120'h202020202020202020202020202020, 8'd40, 8'd58}; 
+		else if (pre_message) emoji= {8'h20, 8'h21, 8'h6C, 8'h79, 8'h74, 8'h74, 8'h20, 		8'h2C, 8'h79, 8'h73, 8'h75, 8'h62, 8'h20, 8'h6D, 8'h27, 8'h69};
+	end
+	
+	//choose between presets and keyboard
+	always @* begin
+		if (smiley == 1'b1 || frown == 1'b1 || pre_message == 1'b1) begin
+			message_out <= emoji;
+		end else begin
+			message_out <= lcd_message_out;
+		end
+	end
+	
+	
 	ps2_keyboard ps2 (
 		.clk					(CLOCK_50),
 		.ps2d					(PS2_DAT),
@@ -218,7 +242,7 @@ module skeleton(
 		lcd_display,
 		ps2_ascii,
 		lcd_prompt,
-		message_out,
+		lcd_message_out,
 		LCD_DATA,
 		LCD_RW,
 		LCD_EN,

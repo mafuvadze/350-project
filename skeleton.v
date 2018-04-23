@@ -177,9 +177,16 @@ module skeleton(
 				name = bob;
 				display_state = password_state;
 			end
+			
 		end else if (display_state == password_state) begin
-			if (ps2_ascii == 8'd13) begin
-				display_state = sending_state;
+			if (name == bob) begin
+				if (ps2_ascii == 8'd49) begin
+					display_state = sending_state;
+				end
+			end else if (name == billy) begin 
+				if (ps2_ascii == 8'd48) begin
+					display_state = sending_state;
+				end
 			end
 		end else if (display_state == sending_state) begin
 			if (received) begin

@@ -1,8 +1,8 @@
-module lcd(clock, reset, write_en, data, name, char_buffer, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon);
+module lcd(clock, reset, write_en, data, prompt, char_buffer, _lcd_data, _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon);
 
 	input clock, reset, write_en;
 	input [7:0] data;
-	input [127:0] name;
+	input [127:0] prompt;
 	output _lcd_rw, _lcd_en, _lcd_rs, _lcd_on, _lcd_blon;
 	output [7:0] _lcd_data;
 	output [127:0] char_buffer;
@@ -14,27 +14,27 @@ module lcd(clock, reset, write_en, data, name, char_buffer, _lcd_data, _lcd_rw, 
 	reg lcd_rw, lcd_en, lcd_rs, lcd_on, lcd_blon;
 	reg [7:0] lcd_data;
 	
-	wire [7:0] name_seg [15:0];
+	wire [7:0] prompt_seg [15:0];
 	
 	typedef reg [7:0] line_type [0:15];
 	line_type line1, line2;
 	
-	assign name_seg[0] = name[7:0];
-	assign name_seg[1] = name[15:8];
-	assign name_seg[2] = name[23:16];
-	assign name_seg[3] = name[31:24];
-	assign name_seg[4] = name[39:32];
-	assign name_seg[5] = name[47:40];
-	assign name_seg[6] = name[55:48];
-	assign name_seg[7] = name[63:56];
-	assign name_seg[8] = name[71:64];
-	assign name_seg[9] = name[79:72];
-	assign name_seg[10] = name[87:80];
-	assign name_seg[11] = name[95:88];
-	assign name_seg[12] = name[103:96];
-	assign name_seg[13] = name[111:104];
-	assign name_seg[14] = name[119:112];
-	assign name_seg[15] = name[127:120];
+	assign prompt_seg[0] = prompt[7:0];
+	assign prompt_seg[1] = prompt[15:8];
+	assign prompt_seg[2] = prompt[23:16];
+	assign prompt_seg[3] = prompt[31:24];
+	assign prompt_seg[4] = prompt[39:32];
+	assign prompt_seg[5] = prompt[47:40];
+	assign prompt_seg[6] = prompt[55:48];
+	assign prompt_seg[7] = prompt[63:56];
+	assign prompt_seg[8] = prompt[71:64];
+	assign prompt_seg[9] = prompt[79:72];
+	assign prompt_seg[10] = prompt[87:80];
+	assign prompt_seg[11] = prompt[95:88];
+	assign prompt_seg[12] = prompt[103:96];
+	assign prompt_seg[13] = prompt[111:104];
+	assign prompt_seg[14] = prompt[119:112];
+	assign prompt_seg[15] = prompt[127:120];
 	
 	assign char_buffer = {
 		line2[0],
@@ -80,7 +80,7 @@ module lcd(clock, reset, write_en, data, name, char_buffer, _lcd_data, _lcd_rw, 
 			printed_crlf <= 0;
 			ptr <= 0;
 			for (i=0; i<=15; i=i+1) begin
-				line1[i] <= name_seg[i];
+				line1[i] <= prompt_seg[i];
 				line2[i] <= 8'h20;
 			end
 			
@@ -92,7 +92,7 @@ module lcd(clock, reset, write_en, data, name, char_buffer, _lcd_data, _lcd_rw, 
 			if (write_en==1) begin
 				if (data==9'h0D || (ptr==0 && valid_char==1 && printed_crlf==0)) begin
 					for (i=0; i<=15; i=i+1) begin
-						line1[i] <= name_seg[i];
+						line1[i] <= prompt_seg[i];
 						line2[i] <= 8'h20;
 						buf_changed <= 1;
 					end

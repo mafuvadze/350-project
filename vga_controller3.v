@@ -88,9 +88,8 @@ bg_data2	img_data_inst (
 	assign comparator_counter = 16'd0;
 
 	integer squareSize = 128;
-	integer squareSize_sprite1 = 64;
-	integer xSize = 640;
-	integer ySize = 550;
+	integer xSize = 320;
+	integer ySize = 240;
 
 
 initial
@@ -132,9 +131,9 @@ wire isPlayer;
 //end
 //	
 //assign indexInput = background_switch ? background_input : index;
-//assign isX = xCor >= (ADDR%xSize + xSize - squareSize) && xCor <= (ADDR%xSize + xSize + squareSize);
-//assign isY = yCor >= (ADDR/ySize + ySize - squareSize) && yCor <= (ADDR/ySize + ySize + squareSize);
-//and isS(isPlayer, isX, isY);
+assign isX = xCor >= (ADDR%xSize + xSize - squareSize) && xCor <= (ADDR%xSize + xSize + squareSize);
+assign isY = yCor >= (ADDR/ySize + ySize - squareSize) && yCor <= (ADDR/ySize + ySize + squareSize);
+and isS(isPlayer, isX, isY);
 
 //	wordRom wordRom (
 //		.address(),

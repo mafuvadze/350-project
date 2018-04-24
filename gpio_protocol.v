@@ -1,4 +1,4 @@
-module gpio_protocol (GPIO, clock, data_ready, state, done, message_out, message_in);
+module gpio_protocol (GPIO, clock, data_ready, state, done, received, message_out, message_in);
 	/*
 	
 	[31:0] 	MESSAGE_DATA
@@ -16,7 +16,8 @@ module gpio_protocol (GPIO, clock, data_ready, state, done, message_out, message
  			
 	inout [35:0]		GPIO;
 	
-	output 				done;
+	output 				done,
+							received;
 	output [127:0]		message_in;
 		
 	wire 					shared_clock,
@@ -44,6 +45,7 @@ module gpio_protocol (GPIO, clock, data_ready, state, done, message_out, message
 	assign GPIO[35] = state ? data_ready : 1'bz;
 	assign other_data_ready = state ? GPIO[34] : GPIO[35];
 	assign done = done_reg;
+	assign received = GPIO[33] & (other_data_ready);
 	
 	// Message
 	assign data_out[0] = message_out[31:0];

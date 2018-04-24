@@ -56,22 +56,22 @@ module lcd(clock, reset, write_en, print_data, data, prompt, char_buffer, _lcd_d
 	assign print_data_seg[15] = print_data[127:120];
 	
 	assign char_buffer = {
-		line2[0],
-		line2[1],
-		line2[2],
-		line2[3],
-		line2[4],
-		line2[5],
-		line2[6],
-		line2[7],
-		line2[8],
-		line2[9],
-		line2[10],
-		line2[11],
-		line2[12],
-		line2[13],
-		line2[14],
 		line2[15],
+		line2[14],
+		line2[13],
+		line2[12],
+		line2[11],
+		line2[10],
+		line2[9],
+		line2[8],
+		line2[7],
+		line2[6],
+		line2[5],
+		line2[4],
+		line2[3],
+		line2[2],
+		line2[1],
+		line2[0],
 	};
 
 	reg [3:0] ptr;

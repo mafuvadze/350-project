@@ -150,7 +150,7 @@ module skeleton(
 
 	gpio_protocol comm (
 		.GPIO			(GPIO),
-		.clock		(clock_1hz),
+		.clock		(CLOCK_50),
 		.data_ready	(data_ready),
 		.received	(received),
 		.done			(write_done),

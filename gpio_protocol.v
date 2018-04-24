@@ -57,17 +57,18 @@ module gpio_protocol (GPIO, clock, data_ready, state, done, received, message_ou
 	
 	always @(posedge shared_clock) begin
 		if (done_reg | (~other_data_ready & ~data_ready)) begin
-			counter = 0;
-			done_reg = 0;
+			counter <= 0;
+			done_reg <= 0;
+			if (reading) data_in[counter] = GPIO[31:0];
 		end else if (counter > 3) begin
-			counter 	= 0;
-			done_reg = writting;
+			counter 	<= 0;
+			done_reg <= writting;
+			if (reading) data_in[counter] <= GPIO[31:0];
 		end else begin
-			counter 	= counter + 1;
-			done_reg = 0;
+			counter 	<= counter + 1;
+			done_reg <= 0;
+			if (reading) data_in[counter] <= GPIO[31:0];
 		end
-		
-		if (reading) data_in[counter] = GPIO[31:0];
 	end
 	
 	assign GPIO[31:0] = writting ? data_out[counter] : 32'bz;

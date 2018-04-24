@@ -168,7 +168,7 @@ module skeleton(
 	// PS2
 	assign lcd_write_en = scan_code_ready & ((display_state == password_state) | (display_state == sending_state));			
 
-	always @(posedge CLOCK_50 or posedge (~KEY[1])) begin
+	always @(posedge GPIO[32] or posedge (~KEY[1])) begin
 		if (~KEY[1]) begin
 			display_state = login_state;
 		end else if (display_state == login_state) begin
@@ -222,7 +222,7 @@ module skeleton(
 	
 	
 	ps2_keyboard ps2 (
-		.clk					(CLOCK_50),
+		.clk					(GPIO[32]),
 		.ps2d					(PS2_DAT),
 		.ps2c					(PS2_CLK),
 		.reset				(reset),
@@ -238,7 +238,7 @@ module skeleton(
 	);
 
 	lcd mylcd (
-		CLOCK_50,
+		GPIO[32],
 		lcd_reset,
 		lcd_write_en,
 		lcd_display,
@@ -271,12 +271,12 @@ module skeleton(
 		.sel	(display_state)
 	);
 	 
-	 always @(posedge CLOCK_50) begin
+	 always @(posedge GPIO[32]) begin
 		if (counter == (32'd1250000)) counter <= 32'b0;
 		
-		if (~write_done) sound <= 32'b0;
-		else sound <= sound + 32'd100000000;
-		
+//		if (~received) sound <= 32'b0;
+//		else sound <= sound + 32'd100000000;
+		sound <= sound + 32'd100000000;
 		counter <= counter + 1;
 	end
 

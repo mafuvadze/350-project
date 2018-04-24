@@ -143,7 +143,7 @@ module skeleton(
 	always @(posedge data_pending or posedge write_done) begin
 		if (write_done) begin
 			data_ready = LOW;
-			message_in = message_in_wire;
+			message_in = {message_in_wire[15:4],32'h2020202020202020};
 		end
 		else data_ready = HIGH;
 	end
@@ -159,7 +159,7 @@ module skeleton(
 		.message_out(message_out)
 	);
 
-	assign LEDR[2] 	= fpga_state ? GPIO[35] : GPIO[34];
+	assign LEDR[2] 	= fpga_state ? GPIO[34] : GPIO[35];
 	assign LEDR[1]		= write_done;
 	assign LEDR[0] 	= GPIO[32];
 	assign LEDR[4:3] 	= display_state;
@@ -194,6 +194,8 @@ module skeleton(
 			if (received) begin
 				display_state = recieving_state;
 			end
+		end else if (display_state == recieving_state) begin
+			if (scan_code_ready) display_state = sending_state; 
 		end
 	end
 	

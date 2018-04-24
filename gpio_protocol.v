@@ -55,7 +55,7 @@ module gpio_protocol (GPIO, clock, data_ready, state, done, received, message_ou
 	
 	assign message_in	 = {data_in[3], data_in[2], data_in[1], data_in[0]};
 	
-	always @(posedge clock) begin
+	always @(posedge shared_clock) begin
 		if (done_reg | (~other_data_ready & ~data_ready)) begin
 			counter = 0;
 			done_reg = 0;

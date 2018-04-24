@@ -274,9 +274,9 @@ module skeleton(
 	 always @(posedge GPIO[32]) begin
 		if (counter == (32'd1250000)) counter <= 32'b0;
 		
-//		if (~received) sound <= 32'b0;
-//		else sound <= sound + 32'd100000000;
-		sound <= sound + 32'd100000000;
+		if (display_state == recieving_state) sound <= sound + 32'd100000000;
+		else sound <= sound + 32'b0;
+
 		counter <= counter + 1;
 	end
 

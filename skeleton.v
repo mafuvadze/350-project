@@ -9,6 +9,7 @@
  * inspect which signals the processor tries to assert when.
  */
 
+
 module skeleton(
 	CLOCK_50,
 	GPIO,
@@ -30,13 +31,30 @@ module skeleton(
 	I2C_SDAT,
 	AUD_XCK,
 	AUD_DACDAT,
-	I2C_SCLK
+	I2C_SCLK,
+	VGA_CLK,   														//	VGA Clock
+	VGA_HS,															//	VGA H_SYNC
+	VGA_VS,															//	VGA V_SYNC
+	VGA_BLANK,														//	VGA BLANK
+	VGA_SYNC,														//	VGA SYNC
+	VGA_R,   														//	VGA Red[9:0]
+	VGA_G,	 														//	VGA Green[9:0]
+	VGA_B,															//	VGA Blue[9:0]
+  background_switch_black,
+	background_switch_white,
+	background_switch_blue,
+	background_switch_red,
+	background_switch_green	
 );
 	 input 			CLOCK_50,
 						AUD_ADCDAT;
 	 input [4:0]	SW;
 	 input [3:0]	KEY;
-	 
+	 input background_switch_black,
+							 background_switch_white,
+							 background_switch_blue,
+							 background_switch_red,
+							 background_switch_green;
 	 
 	 output [17:0]	LEDR;
 	 output [7:0]	LCD_DATA;
@@ -50,13 +68,24 @@ module skeleton(
 						I2C_SCLK;
 	 
 	 inout [35:0]	GPIO;
-	 inout			PS2_DAT,
-						PS2_CLK,
+	 inout		PS2_DAT, 
+	 					PS2_CLK,
 						AUD_BCLK,
 						AUD_ADCLRCK,
 						AUD_DACLRCK,
 						I2C_SDAT;	
-					
+     
+     	////////////////////////	VGA	////////////////////////////
+	 output			VGA_CLK;   				//	VGA Clock
+	 output			VGA_HS;					//	VGA H_SYNC
+	 output			VGA_VS;					//	VGA V_SYNC
+	 output			VGA_BLANK;				//	VGA BLANK
+	 output			VGA_SYNC;				//	VGA SYNC
+	 output	[7:0]	VGA_R;   				//	VGA Red[9:0]
+	 output	[7:0]	VGA_G;	 				//	VGA Green[9:0]
+	 output	[7:0]	VGA_B;   				//	VGA Blue[9:0]
+
+     
 	 wire 			clock,
 						HIGH,
 						LOW,
@@ -352,8 +381,7 @@ module skeleton(
 	 processor my_processor(
 		  // Control signals
 		  clock,                          // I: The master clock
-		  reset,                          // I: A reset signal
-		  
+		  reset,                          // I: A reset signal		  
 		  // Imem
 		  address_imem,                   // O: The address of the data to get from imem
 		  q_imem,                         // I: The data from imem
@@ -373,5 +401,21 @@ module skeleton(
 		  data_readRegA,                  // I: Data from port A of regfile
 		  data_readRegB                   // I: Data from port B of regfile
 	 );
+
+	 Reset_Delay			r0	(.iCLK(CLOCK_50),.oRESET(DLY_RST)	);
+	 VGA_Audio_PLL 		p1	(.areset(~DLY_RST),.inclk0(CLOCK_50),.c0(VGA_CTRL_CLK),.c1(AUD_CTRL_CLK),.c2(VGA_CLK)	);
+   vga_controller3 vga_ctrl(.iRST_n(DLY_RST),
+								 .iVGA_CLK(VGA_CLK),
+								 .oBLANK_n(VGA_BLANK),
+								 .oHS(VGA_HS),
+								 .oVS(VGA_VS),
+								 .b_data(VGA_B),
+								 .g_data(VGA_G),
+								 .r_data(VGA_R),
+								 .background_switch_black(background_switch_black),
+								 .background_switch_white(background_switch_white),
+								 .background_switch_blue(background_switch_blue),
+								 .background_switch_green(background_switch_green),
+								 .background_switch_red(background_switch_red));
 
 endmodule
